@@ -1,0 +1,22 @@
+CÓMO EMPEZAR A USAR LA PÁGINA DE FABI
+=====================================
+
+Tus datos quedan guardados en el servidor de Fabi: los ves igual en la compu y en el celular.
+
+1. ANTES, en la versión que usás hoy:
+   Tus datos → «Exportar base». Se baja un archivo .json con todo.
+
+2. Abrí la página nueva en la compu. Te pide la clave de la casa (te la pasa Fabi).
+   La primera vez, el servidor está vacío y se guardan ahí las recetas de base.
+
+3. Tus datos → «Importar base» → elegí el archivo del paso 1.
+   Todo (recetas, productos, marcas, historial, freezer, paelleras) queda en el servidor.
+
+4. En el celular: abrí la página, poné la clave y listo, aparece todo.
+   Tip: «Agregar a la pantalla de inicio» y queda como una app.
+
+Cosas a saber:
+- La clave se pide una sola vez en cada dispositivo. Si se la das a tus hijas, ellas también ven y tachan la misma lista.
+- Sin internet la app sigue andando: guarda en el teléfono y sube los cambios cuando vuelve la conexión.
+- Si cambiaste lo mismo en dos dispositivos sin conexión, te pregunta cuál versión conservar.
+- El servidor guarda una copia por día. Igual, cada tanto hacé «Exportar base» por las dudas.

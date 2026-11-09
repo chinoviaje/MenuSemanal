@@ -1,0 +1,62 @@
+MENÚ DE LA CASA: instrucciones para subirla
+===========================================
+
+Hola Fabi. Es una app web: un HTML (todo el front) más un PHP muy chico que guarda la base en el servidor como un archivo JSON. No usa base de datos, ni Composer, ni build.
+
+Requisitos: PHP 7.4 o más nuevo (probado con 8.3) y HTTPS.
+
+
+QUÉ HAY EN LA CARPETA
+---------------------
+  index.html             la app completa (HTML + CSS + JS)
+  api.php                guarda y devuelve la base (JSON) con una clave
+  config.php             CONFIGURAR: la clave y dónde se guardan los datos
+  datos/                 donde queda la base (trae un .htaccess que bloquea el acceso)
+  manifest.webmanifest, favicon.svg, icon-192.png, icon-512.png   íconos / "agregar a inicio"
+  robots.txt             para que no la indexen
+  LEEME-para-Fabi.txt, LEEME-para-mi.txt   (no hace falta subirlos)
+
+
+PASOS
+-----
+1. Subí la carpeta a un subdominio o directorio con HTTPS, por ejemplo https://menu.tudominio.com/
+   Las rutas son relativas, así que funciona en cualquier carpeta.
+
+2. Editá config.php:
+   - 'clave': poné una clave larga. Es la que ella escribe una vez en cada dispositivo. Pasásela por privado.
+   - 'carpeta_datos': lo ideal es una carpeta FUERA del public_html, por ejemplo '/home/usuario/menu-datos'.
+     Si la dejás en ./datos:
+       Apache: ya trae .htaccess (Require all denied).
+       Nginx: agregá  location ^~ /datos/ { deny all; }   (ajustá la ruta)
+   - El usuario de PHP tiene que poder escribir en esa carpeta (permisos 700/750 al usuario del sitio).
+
+3. Probá:
+     https://TU-URL/api.php?ping=1     -> {"app":"menu-de-la-casa","ok":true}
+     https://TU-URL/datos/base.json    -> tiene que dar 403/404 (NO se tiene que ver)
+   Abrí la página: pide la clave. Con la clave correcta, abajo a la derecha dice "Guardado en el servidor ✓".
+
+4. Recomendado: que index.html no quede cacheado, así se ven las actualizaciones enseguida.
+     Apache (.htaccess en la raíz):
+       <Files "index.html">
+         Header set Cache-Control "no-cache"
+       </Files>
+     Nginx:  location = /index.html { add_header Cache-Control "no-cache"; }
+   Si el servidor no conoce .webmanifest: application/manifest+json.
+
+
+CÓMO FUNCIONA
+-------------
+- GET api.php (header X-Menu-Key: <clave>) devuelve {rev, savedAt, state}.
+- PUT api.php {state, baseRev} guarda. Si otro dispositivo guardó antes (rev distinta), responde 409 y la app le pregunta a ella qué versión conservar.
+- Guarda con flock + escritura atómica (tmp + rename).
+- Copias: una por día en datos/copias/ (las últimas 30, configurable). Si algo sale mal, se restaura copiando una copia a datos/base.json.
+- La app también guarda una copia en el localStorage de cada navegador. Si no hay conexión, sigue funcionando y sube los cambios cuando vuelve.
+- Una clave equivocada tarda medio segundo en responder, para frenar a quien quiera adivinarla.
+- El navegador carga librerías y fuentes de cdnjs.cloudflare.com y fonts.googleapis.com. Si ponés un Content-Security-Policy, permitilos.
+
+
+ACTUALIZACIONES
+---------------
+Para una versión nueva de la app, reemplazá index.html (y api.php si cambia). NO pises config.php ni la carpeta datos.
+
+¡Gracias!
