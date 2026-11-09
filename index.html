@@ -608,7 +608,7 @@ function baseBar(){
 
 
 /* ---------- base en el servidor (cuando la app está hosteada con api.php al lado) ---------- */
-const SRV_URL = "api.php", LS_SRVKEY = "menu-casa-srvkey", LS_SRVREV = "menu-casa-srvrev", LS_SRVDIRTY = "menu-casa-srvdirty";
+let SRV_URL = "api.php"; const LS_SRVKEY = "menu-casa-srvkey", LS_SRVREV = "menu-casa-srvrev", LS_SRVDIRTY = "menu-casa-srvdirty";
 let srv = null; // {key, rev, dirty, offline, timer, chain}
 async function srvFetch(method, body, q){
   const r = await fetch(SRV_URL + "?t=" + Date.now() + (q || ""), {method, cache: "no-store", headers: Object.assign({"X-Menu-Key": srv.key}, body ? {"Content-Type": "application/json"} : {}), body: body ? JSON.stringify(body) : undefined});
@@ -617,12 +617,15 @@ async function srvFetch(method, body, q){
 }
 async function srvProbe(){
   if (!LOCAL_MODE || !/^https?:$/.test(location.protocol)) return false;
-  try { const r = await fetch(SRV_URL + "?ping=1&t=" + Date.now(), {cache: "no-store"}); if (!r.ok) return false; const j = await r.json(); return !!(j && j.app === "menu-de-la-casa"); } catch (e) { return false; }
+  for (const u of ["api/base", "api.php"]) { // Vercel (api/base) o PHP (api.php)
+    try { const r = await fetch(u + "?ping=1&t=" + Date.now(), {cache: "no-store"}); if (!r.ok) continue; const j = await r.json(); if (j && j.app === "menu-de-la-casa") { SRV_URL = u; return true; } } catch (e) {}
+  }
+  return false;
 }
 function askKey(msg){
   return new Promise(res => {
     $("#modalRoot").innerHTML = `<div class="backdrop"><div class="modal" style="width:min(460px,100%)"><div class="head"><h2>🔑 Entrar a Menú de la Casa</h2></div>
-      <p class="hint">Tus datos se guardan en el servidor, así los ves igual en la compu y en el celular. Escribí la clave de la casa (la de config.php).</p>
+      <p class="hint">Tus datos se guardan en el servidor, así los ves igual en la compu y en el celular. Escribí la clave de la casa (la que configuraste al publicarla).</p>
       ${msg ? `<div class="err">${esc(msg)}</div>` : ""}
       <label class="f">Clave<input id="srvKeyIn" type="password" autocomplete="current-password"></label>
       <div class="confirm" style="margin-top:10px"><button class="btn primary" id="srvKeyGo">Entrar</button><button class="btn" id="srvKeySkip">Usar sin servidor (solo este dispositivo)</button></div></div></div>`;
