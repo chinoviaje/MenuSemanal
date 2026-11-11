@@ -260,6 +260,9 @@ button.schip{cursor:pointer;font-family:inherit}
 .su-item.done{opacity:.55}.su-item.done .su-box{background:var(--ok);border-color:var(--ok)}.su-item.done .su-n{text-decoration:line-through}
 .su-n{flex:1;font-weight:600;min-width:0}.su-n small{display:block;font-weight:400;font-size:.85rem;color:var(--muted);text-decoration:none}
 .su-q{font-weight:800;white-space:nowrap;font-size:1.1rem}
+.su-buy{margin:-4px 0 12px 44px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:1rem}
+.su-buy label{display:flex;align-items:center;gap:8px;font-weight:600}.su-buy input{width:92px;font:inherit;font-size:1.1rem;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg)}
+.su-opts{display:flex;flex-wrap:wrap;gap:6px}.su-buy small{flex-basis:100%;color:var(--muted)}
 .su-done{text-align:center;font-size:1.2rem;margin:20px 0;font-weight:700;color:var(--ok)}
 .sidepick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:var(--soft, rgba(0,0,0,.03));border-radius:10px}
 .sidepick label{font-weight:700}.sidepick select{width:auto;max-width:100%}
@@ -693,7 +696,7 @@ function normalize(s){
   if (!Array.isArray(s.days) || s.days.length !== 7) s.days = d.days;
   if (!Array.isArray(s.preps)) s.preps = [];
   s.preps = s.preps.filter(Boolean);
-  s.checked = s.checked || {};
+  s.checked = s.checked || {}; if (!s.boughtQ || typeof s.boughtQ !== "object") s.boughtQ = {};
   if (!Array.isArray(s.extra)) s.extra = []; // recetas sueltas sumadas a la compra de la semana: [{rid, people}]
   if (!Array.isArray(s.saved)) s.saved = [];
   if (!Array.isArray(s.history)) s.history = [];
@@ -2453,7 +2456,7 @@ function applySaved(m){
   if (roll) state.days[0].vianda = true;
   if (m.nextMon !== undefined) state.nextMonVianda = !!m.nextMon;
   state.preps = (m.preps || []).map(ok).filter(Boolean); state.prepDone = {};
-  state.checked = {};
+  state.checked = {}; state.boughtQ = {};
 }
 function shopListHTML(g, checked, scope){
   let h = "";
@@ -3715,10 +3718,32 @@ function openCook(rid, people, side, vn){
   document.body.style.overflow = "hidden";
 }
 function superItems(){
-  const g = shopping(), groups = SHOPS.map(sh => [sh, (g[sh] || []).map(x => ({k: x.p.id, name: x.p.name, sub: [packDesc(x.p), x.packed ? "necesitás " + x.need : ""].filter(Boolean).join(" · "), q: x.qty}))]).filter(x => x[1].length);
+  const g = shopping(), groups = SHOPS.map(sh => [sh, (g[sh] || []).map(x => ({k: x.p.id, row: x, name: x.p.name, sub: [packDesc(x.p), x.packed ? "necesitás " + x.need : ""].filter(Boolean).join(" · "), q: x.qty}))]).filter(x => x[1].length);
   const fj = (state.fijos || []).map(f => ({k: "fijo:" + f.name, name: f.name, sub: "", q: fijoText(f)}));
   if (fj.length) groups.push(["Fijos de la semana", fj]);
   return groups;
+}
+/* cuánto compraste de verdad: al salir se guarda en la despensa («En casa») */
+const suUnit = p => p.unit === "g" || p.unit === "ml" ? p.unit : (p.plural || p.unit);
+const suBought = x => { const v = (state.boughtQ || {})[x.k]; return v > 0 ? v : boughtAmount(x.row); };
+function suBuyRow(x){
+  if (!x.row || state.stock[x.k] === "all") return "";
+  const p = x.row.p, v = suBought(x), u = suUnit(p), justo = boughtAmount(x.row);
+  let opts;
+  if (!isFresh(p) && Number(p.packSize) > 0) { const z = Number(p.packSize), pt = p.packType || "paquete"; opts = [1, 2, 3].map(k => [k * z, `${k} ${k === 1 ? pt : pt + (/[aeiou]$/i.test(pt) ? "s" : "es")}`]); }
+  else if (p.unit === "g" || p.unit === "ml") { const big = p.unit === "g" ? "kg" : "l"; opts = [[justo, "Lo justo"], [500, "½ " + big], [1000, "1 " + big], [2000, "2 " + big]]; }
+  else opts = [justo, justo + 1, justo + 2, justo * 2].filter((n, i, a) => a.indexOf(n) === i).map(n => [n, String(n)]);
+  return `<div class="su-buy"><label>Compraste <input type="number" inputmode="decimal" min="0" step="any" data-suq="${esc(x.k)}" value="${Math.round(v * 100) / 100}" aria-label="Cuánto compraste de ${esc(x.name)}"> ${esc(u)}</label>
+    <span class="su-opts">${opts.map(([n, l]) => `<button class="chip" data-suset="${esc(x.k)}" data-n="${n}" aria-pressed="${Math.abs(n - v) < 1e-6}">${esc(l)}</button>`).join("")}</span>
+    ${v > justo + 1e-6 ? `<small>Sobran ${esc(fmtQty(v - justo, p))} para la despensa</small>` : ""}</div>`;
+}
+function superToStock(){
+  let n = 0;
+  for (const [, l] of superItems()) for (const x of l) if (x.row && state.checked[x.k]) {
+    const cur = state.stock[x.k]; if (cur !== "all") state.stock[x.k] = Math.round(((Number(cur) || 0) + suBought(x)) * 100) / 100;
+    delete state.checked[x.k]; n++; }
+  state.boughtQ = {};
+  return n;
 }
 function renderSuper(){
   const root = $("#superRoot"); if (!root) return;
@@ -3730,11 +3755,11 @@ function renderSuper(){
   const shown = groups.filter(([sh]) => superMode.shop === "todos" || sh === superMode.shop);
   const keep = root.querySelector(".su-list") ? root.querySelector(".su-list").scrollTop : 0;
   root.innerHTML = `<div class="super" role="dialog" aria-modal="true" aria-label="Ir de compras">
-    <div class="su-top"><div class="su-title">🛒 ${done} de ${all.length} en el carrito</div><button class="btn small" id="suHide">${superMode.hide ? "Mostrar lo que ya tengo" : "Ocultar lo que ya tengo"}</button><button class="btn small primary" id="suClose">Salir</button>
+    <div class="su-top"><div class="su-title">🛒 ${done} de ${all.length} en el carrito</div><button class="btn small" id="suHide">${superMode.hide ? "Mostrar lo que ya tengo" : "Ocultar lo que ya tengo"}</button><button class="btn small primary" id="suClose" title="Lo que marcaste se guarda en la despensa">Terminé</button>
       <div class="su-bar"><span style="width:${all.length ? Math.round(done / all.length * 100) : 0}%"></span></div></div>
     <div class="su-tabs">${tabs.map(([k, l, n]) => `<button class="chip" data-sushop="${esc(k)}" aria-pressed="${superMode.shop === k}">${esc(l)} <b>${n || "✓"}</b></button>`).join("")}</div>
     <div class="su-list">${shown.map(([sh, l]) => { const items = l.slice().sort((a, b) => (!!ck[a.k] - !!ck[b.k]) || a.name.localeCompare(b.name, "es")).filter(x => !superMode.hide || !ck[x.k]);
-      return `<h3>${esc(sh)}</h3>` + (items.length ? items.map(x => `<button class="su-item${ck[x.k] ? " done" : ""}" data-sutog="${esc(x.k)}" aria-pressed="${!!ck[x.k]}"><span class="su-box" aria-hidden="true">${ck[x.k] ? "✓" : ""}</span><span class="su-n">${esc(x.name)}${x.sub ? `<small>${esc(x.sub)}</small>` : ""}</span><span class="su-q">${esc(x.q)}</span></button>`).join("") : `<p class="hint">Todo listo acá ✓</p>`); }).join("")}
+      return `<h3>${esc(sh)}</h3>` + (items.length ? items.map(x => `<button class="su-item${ck[x.k] ? " done" : ""}" data-sutog="${esc(x.k)}" aria-pressed="${!!ck[x.k]}"><span class="su-box" aria-hidden="true">${ck[x.k] ? "✓" : ""}</span><span class="su-n">${esc(x.name)}${x.sub ? `<small>${esc(x.sub)}</small>` : ""}</span><span class="su-q">${esc(x.q)}</span></button>${ck[x.k] ? suBuyRow(x) : ""}`).join("") : `<p class="hint">Todo listo acá ✓</p>`); }).join("")}
       ${all.length && done === all.length ? `<div class="su-done">¡Listo! Ya tenés todo 🎉</div>` : ""}</div></div>`;
   const nl = root.querySelector(".su-list"); if (nl) nl.scrollTop = keep;
 }
@@ -3829,12 +3854,13 @@ async function openSuper(){
   superMode = {shop: "todos", hide: false}; document.body.style.overflow = "hidden"; renderSuper();
   try { if ("wakeLock" in navigator) superMode.wake = await navigator.wakeLock.request("screen"); } catch (e) {}
 }
-function closeSuper(){ try { superMode && superMode.wake && superMode.wake.release(); } catch (e) {} superMode = null; renderSuper(); document.body.style.overflow = ""; render(); }
+function closeSuper(){ try { superMode && superMode.wake && superMode.wake.release(); } catch (e) {} const n = superToStock(); if (n) { save(); toast(`Guardé ${n} ${n === 1 ? "producto" : "productos"} en la despensa`); } superMode = null; renderSuper(); document.body.style.overflow = ""; render(); }
 function superClick(t){
   if (t.id === "suClose") { closeSuper(); return true; }
   if (t.id === "suHide") { superMode.hide = !superMode.hide; renderSuper(); return true; }
   if (t.dataset.sushop) { superMode.shop = t.dataset.sushop; renderSuper(); $(".su-list")?.scrollTo(0, 0); return true; }
-  if (t.dataset.sutog) { const k = t.dataset.sutog; if (state.checked[k]) delete state.checked[k]; else state.checked[k] = true; try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} save(); renderSuper(); return true; }
+  if (t.dataset.suset) { (state.boughtQ = state.boughtQ || {})[t.dataset.suset] = Number(t.dataset.n); save(); renderSuper(); return true; }
+  if (t.dataset.sutog) { const k = t.dataset.sutog; if (state.checked[k]) { delete state.checked[k]; if (state.boughtQ) delete state.boughtQ[k]; } else state.checked[k] = true; try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} save(); renderSuper(); return true; }
   return false;
 }
 function closeCook(){
@@ -4239,6 +4265,7 @@ document.addEventListener("click", async e => {
   if (t.id === "impNo") { pendingImport = null; closeModal(); return; }
 });
 document.addEventListener("change", e => {
+  if (e.target.dataset && e.target.dataset.suq) { const v = Number(String(e.target.value).replace(",", ".")); state.boughtQ = state.boughtQ || {}; if (v > 0) state.boughtQ[e.target.dataset.suq] = v; else delete state.boughtQ[e.target.dataset.suq]; save(); setTimeout(() => { if (superMode) renderSuper(); }, 0); return; }
   if (e.target.id === "prevSunSel") { state.prevSun = e.target.value ? {dinner: e.target.value, dinnerSalsa: null} : null; save(); render(); return; }
   const t = e.target;
   if (t.dataset.gp && curCalcId()) { const id = curCalcId(), d = (CALC_PARAMS[id].find(x => x[0] === t.dataset.gp) || [])[2], v = Number(String(t.value).replace(",", "."));
