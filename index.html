@@ -549,6 +549,29 @@ select,input,textarea{border-radius:10px}
   .racts .btn{flex:1}
   .rlist{grid-template-columns:1fr}
 }
+/* despensa y especiales */
+.dpsec{margin-bottom:26px}
+.fzlist .x{border:0;background:none;color:var(--muted);font-size:1.05rem;width:28px;height:28px;border-radius:50%;cursor:pointer}.fzlist .x:hover{background:var(--sunk)}
+.dintro{margin:2px 0 12px}
+.dsub{font-size:.9rem;color:var(--muted);margin:14px 0 2px}.dsub.warn{color:var(--amber)}
+.dprow{display:grid;grid-template-columns:minmax(0,1fr) auto 110px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.dpn{display:grid;min-width:0}.dpn small{color:var(--muted);font-size:.8rem}.dpn small.warn{color:var(--amber);font-weight:600}
+.dpname{border:0;background:none;padding:0;font:600 1rem var(--body);color:var(--fg);text-align:left;cursor:pointer}
+.dpname:hover{color:var(--accent)}
+.dpw{justify-self:end}
+.dfold{margin-top:10px}
+.fzsec{border-top:1px solid var(--line);padding-top:18px}
+.fzsec .fzlist li{border-bottom:1px solid var(--line);padding:10px 0}
+.dmore{margin:22px 0 6px;padding-top:16px;border-top:1px solid var(--line)}
+.stockrow{grid-template-columns:minmax(0,1fr) auto}
+.splist{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.spcard{display:grid;gap:4px;justify-items:start;text-align:left;border:0;background:var(--surface);border-radius:16px;padding:16px 18px;font:inherit;color:var(--fg);cursor:pointer}
+.spcard:hover{box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.spcard b{font-family:var(--display);font-size:1.2rem;font-weight:600}
+.spcard small{color:var(--muted)}
+.sphead{margin-top:14px}
+.sptitle{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:10px 0 4px}
+@media (max-width:640px){.dprow{grid-template-columns:minmax(0,1fr) auto}.dprow .dpw{grid-column:1/-1;justify-self:start}}
 /* navegación en el celular */
 @media (max-width:760px){
   header.top .wrap{padding-block:10px;gap:8px}
@@ -1758,11 +1781,11 @@ function viewEnCasa(){
   const ids = Object.keys(state.stock).filter(id => prodById(id) && state.stock[id] !== undefined);
   const need = weekNeeds();
   const unitLbl = p => p.unit === "g" || p.unit === "ml" ? p.unit : (p.plural || p.unit);
-  let h = `<div class="toolbar" style="margin-top:0"><h3 style="margin-right:auto;text-transform:none;letter-spacing:0;font:400 1.15rem var(--display);color:var(--ink)">Lo que tenés en casa</h3><button class="btn primary" id="encasaAddBtn">+ Agregar algo que tengo</button></div>
-    <p class="hint" style="margin:0 0 10px">Todo lo que anotes acá <b>se descuenta de la lista de compras</b>. Se carga solo cuando terminás de comprar («Guardar lo comprado en En casa», en Compras) y se descuenta cuando pasás la semana al historial. También lo podés corregir a mano cuando quieras.</p>`;
+  let h = `<div class="toolbar" style="margin-top:0"><h2 class="stitle" style="margin-right:auto">🏠 Lo que hay en casa</h2><button class="btn primary" id="encasaAddBtn">+ Agregar</button></div>
+    <p class="hint dintro">Lo que anotes acá no se te pide en la lista de compras.</p>`;
   if (encasaAdd) h += `<div class="saveform"><select id="eaProd" style="flex:2"><option value="">Elegí producto…</option>${SHOPS.map(sh => { const ps = state.products.filter(p => p.shop === sh && state.stock[p.id] === undefined).sort((a, b) => a.name.localeCompare(b.name, "es")); return ps.length ? `<optgroup label="${esc(sh)}">${ps.map(p => `<option value="${p.id}">${esc(p.name)} (${esc(unitLbl(p))})</option>`).join("")}</optgroup>` : ""; }).join("")}</select>
       <input id="eaQty" placeholder="cuánto (o «todo»)" style="max-width:150px"><button class="btn primary" id="eaSave">Agregar</button><button class="btn" id="eaCancel">Cancelar</button></div>`;
-  if (!ids.length) return h + `<section class="emptybox"><div class="big">🏠</div><h3>Todavía no anotaste nada</h3><p class="hint">Agregá lo que ya tenés (el arroz de la alacena, la carne del freezer…) y la lista de compras no te lo va a pedir. O hacé la compra, tildá lo que compraste y tocá «Guardar lo comprado en En casa».</p></section>`;
+  if (!ids.length) return h + `<p class="hint">Todavía no anotaste nada. Agregá lo que ya tenés, o en Compras tocá ⋯ → «Pasar lo comprado a En casa».</p>`;
   h += `<div class="shopgrid">`;
   for (const sh of SHOPS) {
     const ps = ids.map(prodById).filter(p => (SHOPS.includes(p.shop) ? p.shop : "Otro") === sh).sort((a, b) => a.name.localeCompare(b.name, "es"));
@@ -1774,10 +1797,10 @@ function viewEnCasa(){
       else st = `<span class="hint">no lo usa el menú de esta semana</span>`;
       return `<div class="item stockrow"><span><span class="n">${esc(p.name)}</span><br><span class="u">${st}</span></span>
         <span class="qcol"><span style="display:flex;gap:4px;align-items:center"><input data-stock="${p.id}" value="${v === "all" ? "todo" : esc(v)}" style="width:76px" aria-label="Cuánto tenés de ${esc(p.name)}"><span class="hint">${esc(unitLbl(p))}</span></span>
-        <button class="linkbtn" data-haveclear="${p.id}" title="Ya no tengo">✕ ya no tengo</button></span></div>`;
+        <button class="imore" data-haveclear="${p.id}" title="Ya no tengo" aria-label="Ya no tengo ${esc(p.name)}">✕</button></span></div>`;
     }).join("") + `</section>`;
   }
-  return h + `</div><p class="hint" style="margin-top:10px">Escribí «todo» si tenés de sobra (por ejemplo, sal o aceite): no se pide nunca y no se descuenta.</p>`;
+  return h + `</div><p class="hint" style="margin-top:10px">Escribí «todo» si tenés de sobra (sal, aceite…): no se pide nunca.</p>`;
 }
 function weekEntries(){
   const e = menuSlots().map(sl => ({r: recById(sl.rid), people: sl.people || state.comensales, label: recById(sl.rid).name}));
@@ -2009,7 +2032,7 @@ function render(){
   const head = t => `<div class="pagehead"><div><h2 class="ptitle">${t}</h2></div></div>`;
   const segRec = () => `<div class="pagehead"><div><h2 class="ptitle">Recetas</h2></div><div class="pacts"><button class="btn primary" id="newRec">＋ Nueva receta</button>
       <div class="more"><button class="iconbtn" id="recMore" aria-label="Más opciones de recetas" aria-expanded="${openMenu === "rec"}">⋯</button>${openMenu === "rec" ? `<div class="menu" role="menu">${CALC_LIST.map(([id, ic, n]) => `<button role="menuitem" data-calcgo="${id}">${ic} ${esc(n)}</button>`).join("")}<button role="menuitem" id="catsBtn">Categorías y etiquetas</button></div>` : ""}</div></div></div>` + seg([["recetas", "Recetas"], ["especiales", "Especiales"]], tab);
-  const segDesp = () => head("Despensa") + seg([["despensa", "Freezer y meal prep"], ["productos", "Productos y lo que hay en casa"]], tab);
+  const segDesp = () => head("Despensa") + seg([["despensa", "Freezer y meal prep"], ["productos", "En casa y productos"]], tab);
   const nt = h => `<div class="notitle">${h}</div>`;
   const segMas = () => `<div class="pagehead"><div><h2 class="ptitle">Más</h2></div></div>` + seg([["historial", "Historial"], ["guardados", "Menús guardados"], ["datos", "Tus datos"]], tab);
   if (tab === "menu") m.innerHTML = viewMenu();
@@ -2069,8 +2092,8 @@ let fzAdd = false;
 function freezerSection(){
   const items = state.freezer.filter(x => !isMP(recById(x.rid))).sort((a, b) => a.date.localeCompare(b.date));
   const recOpts = `<option value="">Elegí la receta…</option>` + state.recipes.filter(r => !isMP(r) && (!isSalsa(r) || r.cat === "Salsa")).sort((a, b) => a.name.localeCompare(b.name, "es")).map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("") + `<option value="__otro">Otra cosa (escribir)</option>`;
-  return `<section class="prepbox fzbox"><div class="toolbar" style="margin:0"><div style="margin-right:auto"><h2>🧊 Platos en el freezer</h2>
-      <div class="hint">Lo que cocinaste de más y congelaste. Al armar la semana se ofrece primero; si un plato sale del freezer, no se compra. Al pasar la semana al historial se descuenta.</div></div>
+  return `<section class="dpsec fzsec"><div class="toolbar" style="margin:0"><div style="margin-right:auto"><h2 class="stitle">🧊 Platos en el freezer</h2>
+      <p class="hint dintro">Lo que congelaste de más. Si un plato sale del freezer, no se compra.</p></div>
       <button class="btn small" id="fzAddOpen">${fzAdd ? "Cancelar" : "+ Agregar"}</button></div>
     ${fzAdd ? `<div class="saveform" style="margin:0"><select id="fzRec" style="max-width:260px">${recOpts}</select><input id="fzName" placeholder="¿Qué es? (ej.: tuco casero)" style="max-width:220px;display:none"><input id="fzN" type="number" min="1" step="1" value="${state.comensales}" style="max-width:80px" aria-label="Porciones"><span class="hint">porciones</span><button class="btn primary small" id="fzSave">Guardar</button></div>` : ""}
     ${items.length ? `<ul class="fzlist">${items.map(x => { const r = recById(x.rid), age = daysAgo(x.date);
@@ -2100,18 +2123,20 @@ function mpWeekBox(){
     <select class="salsa prepadd" id="prepAdd" aria-label="Agregar meal prep">${prepOptions()}</select></section>`;
 }
 function viewMP(){
-  const rank = {out: 0, low: 1, ok: 2}, list = state.recipes.filter(isMP).sort((a, b) => rank[mpStatus(a)] - rank[mpStatus(b)] || a.name.localeCompare(b.name, "es"));
-  const badge = st => st === "out" ? `<span class="mpst out">Sin stock</span>` : st === "low" ? `<span class="mpst low">Queda poco</span>` : `<span class="mpst ok">OK</span>`;
-  let h = `<section class="mpstock"><div class="toolbar" style="margin:0 0 6px"><div style="margin-right:auto"><h2>🥫 Stock de meal prep</h2>
-    <div class="hint">Lo que tenés guardado de cada preparación. Usá − cuando sacás algo del freezer; «Listo» en el Menú lo suma solo. Para que una receta aparezca acá: Editar → «🥫 Meal prep».</div></div></div>`;
-  h += list.length ? `<div class="mptable">${list.map(r => { const n = fzOf(r.id), st = mpStatus(r), inW = state.preps.includes(r.id);
-      const old = state.freezer.filter(x => x.rid === r.id).map(fzLeft).sort((a, b) => a.left - b.left)[0];
-      return `<div class="mprow ${st}"><div class="mpname"><b>${esc(r.name)}</b> <button class="open" data-open="${r.id}">ver</button>
-          <div class="hint">rinde ${esc(mpYield(r))} por tanda${old ? old.left < 0 ? ` · <b style="color:var(--warn)">⚠ lo más viejo pasó su tiempo</b>` : old.left <= 21 ? ` · <b style="color:var(--warn)">⚠ lo más viejo vence en ${old.left} días</b>` : "" : ""}</div></div>
-        <div class="mpq"><button class="iconbtn" data-mpst="${r.id}:-1" aria-label="Usé uno">−</button><b>${nfmt(n)}</b><button class="iconbtn" data-mpst="${r.id}:1" aria-label="Agregar uno">+</button><span class="hint">${esc(r.mp.u)}</span></div>
-        ${badge(st)}
-        ${inW ? `<span class="hint">✓ en esta semana</span>` : `<button class="btn small" data-mpweek="${r.id}">+ a esta semana</button>`}</div>`; }).join("")}</div>`
-    : `<p class="hint">Todavía no marcaste ninguna receta como meal prep.</p>`;
+  const by = (x, y) => x.name.localeCompare(y.name, "es");
+  const all = state.recipes.filter(isMP).sort(by);
+  const low = all.filter(mpAlert), have = all.filter(r => fzOf(r.id) > 0 && !mpAlert(r)), rest = all.filter(r => !low.includes(r) && !have.includes(r));
+  const row = r => { const n = fzOf(r.id), inW = state.preps.includes(r.id);
+    const old = state.freezer.filter(x => x.rid === r.id).map(fzLeft).sort((a, b) => a.left - b.left)[0];
+    const sub = n <= 0 ? (state.mpSeen[r.id] ? "Se terminó" : "Rinde " + mpYield(r) + " por tanda") : old && old.left < 0 ? "⚠ Lo más viejo pasó su tiempo" : old && old.left <= 21 ? `⚠ Lo más viejo vence en ${old.left} días` : "Rinde " + mpYield(r) + " por tanda";
+    return `<div class="dprow"><div class="dpn"><button class="dpname" data-open="${r.id}">${esc(r.name)}</button><small${/⚠/.test(sub) ? ' class="warn"' : ""}>${esc(sub)}</small></div>
+      <div class="mpq"><button class="iconbtn sm" data-mpst="${r.id}:-1" aria-label="Usé uno de ${esc(r.name)}">−</button><b>${nfmt(n)}</b><button class="iconbtn sm" data-mpst="${r.id}:1" aria-label="Agregar uno de ${esc(r.name)}">+</button><span class="hint">${esc(r.mp.u)}</span></div>
+      ${inW ? `<span class="hint dpw">✓ en la semana</span>` : `<button class="btn small dpw" data-mpweek="${r.id}">+ Semana</button>`}</div>`; };
+  let h = `<section class="dpsec"><h2 class="stitle">🥫 Meal prep</h2><p class="hint dintro">Lo que hacés en tanda y guardás. Usá − cuando sacás algo; «Listo» en la semana lo suma solo.</p>`;
+  if (low.length) h += `<h3 class="dsub warn">Se está terminando</h3>` + low.map(row).join("");
+  if (have.length) h += `<h3 class="dsub">Lo que tenés</h3>` + have.map(row).join("");
+  if (!low.length && !have.length) h += `<p class="hint">Todavía no tenés nada anotado. Tocá + en una preparación, o «Listo» cuando la hagas en la semana.</p>`;
+  if (rest.length) h += `<details class="rfold dfold"${!low.length && !have.length ? " open" : ""}><summary><span>${low.length || have.length ? "Otras preparaciones" : "Tus preparaciones"}</span><small>${rest.length}</small></summary><div class="rfin">${rest.map(row).join("")}</div></details>`;
   return h + `</section>` + freezerSection();
 }
 function renderSheet(){
@@ -2433,31 +2458,30 @@ function viewCompras(){
   return h;
 }
 let spSel = null;
+let spOpen = false;
 function viewEspeciales(){
   const list = specials().sort((a, b) => a.name.localeCompare(b.name, "es"));
-  let h = `<div class="toolbar"><h2>Especiales</h2>${calcMenuHTML()}<span class="hint" style="margin-right:auto">Las recetas que se hacen cada tanto, por fuera del menú semanal (locro, pastelitos, el asado de un cumpleaños…). No aparecen en los desplegables del menú.</span></div>`;
-  if (!list.length) return h + `<div class="summary"><span class="hint">Todavía no hay ninguna. Para sumar una: en la pestaña Recetas abrí la receta y tocá <b>«🎉 Marcar como especial»</b>.</span></div>`;
-  if (!spSel || !list.some(r => r.id === spSel)) spSel = list[0].id;
-  h += `<div class="chips" style="margin-bottom:12px">${list.map(r => `<button class="chip${r.id === spSel ? "" : ""}" data-spsel="${r.id}" aria-pressed="${r.id === spSel}">${esc(r.name)}${spOf(r).addToWeek ? " · 🛒" : ""}</button>`).join("")}</div>`;
+  if (!list.length) return `<p class="hint dintro">Las recetas que se hacen cada tanto, por fuera del menú semanal (un locro, el asado de un cumpleaños…).</p><p class="hint">Todavía no hay ninguna. Para sumar una, abrí la receta y en ⋯ tocá «🎉 Marcar como especial».</p>`;
+  if (!spSel || !list.some(r => r.id === spSel)) { spSel = list[0].id; spOpen = false; }
+  if (!spOpen) return `<p class="hint dintro">Las que se hacen cada tanto, por fuera del menú semanal. Tocá una para ver su compra.</p><div class="splist">${list.map(r => { const sp = spOf(r), x = lastMade()[r.id];
+      return `<button class="spcard" data-spsel="${r.id}"><b>${esc(r.name)}</b><small>Para ${sp.people}${x ? " · la hicieron " + agoText(daysAgo(x.date)) : ""}</small>${sp.addToWeek ? `<span class="tg tv">🛒 en la compra de la semana</span>` : ""}</button>`; }).join("")}</div>`;
   const r = recById(spSel), sp = spOf(r);
-  const g = specialShopping(r), all = SHOPS.flatMap(x => g[x] || []), pend = all.filter(x => !sp.checked[x.p.id]).length;
-  const txt = whatsappText(false, r);
-  h += `<section class="preps" style="gap:14px">
-    <div class="toolbar" style="margin:0"><h2 style="margin-right:auto">${esc(r.name)}</h2>
-      <button class="btn primary" data-spcook="${r.id}">👩‍🍳 Cocinar</button><button class="btn" data-open="${r.id}" data-people="${sp.people}">Ver receta</button><button class="btn" id="spPdf">PDF</button><button class="btn" id="spDone" title="Anotarla en el historial con la fecha de hoy">✓ La hicimos</button></div>
-    <div class="hint">${(() => { const x = lastMade()[r.id]; return x ? "<b>Última vez: " + agoText(daysAgo(x.date)) + " (" + fmtDay(x.date) + ")</b> · " : ""; })()}${esc(r.cat)} · la receta rinde ${serves(r)}${timeLabel(r) ? " · " + esc(timeLabel(r)) : ""}${r.prev && r.prev.when ? " · ⏰ " + esc((r.prev.when === "noche" ? "la noche anterior: " : "unas horas antes: ") + r.prev.text) : ""}</div>
-    <div class="serv" style="flex-wrap:wrap"><span>¿Para cuántos la vas a hacer?</span><span style="display:inline-flex;gap:6px;align-items:center;white-space:nowrap"><button class="iconbtn" id="spMinus" aria-label="Uno menos">−</button><span class="num">${sp.people}</span><button class="iconbtn" id="spPlus" aria-label="Uno más">+</button><span class="hint">personas</span></span></div>
-    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="spWeek" style="width:auto"${sp.addToWeek ? " checked" : ""}> Sumar esta compra a la lista de la semana</label>
-    <div class="grid2"><div><h3 style="margin-bottom:6px">Ingredientes para ${sp.people}</h3><div class="pre">${esc(ingLines(r, sp.people).map(l => "• " + l).join("\n")) || "—"}</div></div>
-      <div><div class="toolbar" style="margin:0 0 6px"><h3 style="margin-right:auto">Compras · ${pend} por comprar${(() => { const cs = costSummary(g); return cs.n ? ` · 💲 ${money(cs.tot)}` : ""; })()}</h3><button class="btn small" id="spUncheck">Desmarcar</button></div>
-        <div class="shopgrid" style="columns:1">${shopListHTML(g, sp.checked, "sp:" + r.id) || `<p class="hint">Ningún ingrediente está vinculado a un producto.</p>`}</div></div></div>
-    ${jumboBox("spPrice", {g, title: r.name + " para " + sp.people, checked: sp.checked})}
-    <div class="wa" style="margin:0"><div class="toolbar" style="margin:0"><h3 style="margin-right:auto">Para WhatsApp</h3><button class="btn" id="spCopy">Copiar texto</button>
-      <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(txt)}">Abrir WhatsApp</a></div>
-      <textarea id="spWa" readonly style="min-height:110px">${esc(txt)}</textarea></div>
-    <div class="hint" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">¿Ya no es una comida especial? <button class="btn small" data-spec="${r.id}">Quitar la marca de especial</button> <span>Se va de esta pestaña y vuelve a aparecer para elegir en el menú semanal.</span></div>
-  </section>`;
-  return h;
+  const g = specialShopping(r), all = SHOPS.flatMap(x => g[x] || []), pend = all.filter(x => !sp.checked[x.p.id]).length, cs = costSummary(g), x = lastMade()[r.id];
+  return `<div class="sphead"><button class="linkbtn" id="spBack">← Especiales</button></div>
+    <div class="pagehead" style="margin-top:6px"><div><div class="rmeta">${esc([r.cat, timeLabel(r)].filter(Boolean).join(" · "))}</div><h2 class="rtitle">${esc(r.name)}</h2>${x ? `<div class="hint">La hicieron ${agoText(daysAgo(x.date))} (${fmtDay(x.date)})</div>` : ""}</div>
+      <div class="pacts"><button class="btn primary" data-spcook="${r.id}">👩‍🍳 Cocinar</button><button class="btn" data-open="${r.id}" data-people="${sp.people}">Ver receta</button>
+        <div class="more"><button class="iconbtn" id="spMore" aria-label="Más opciones" aria-expanded="${openMenu === "sp"}">⋯</button>${openMenu === "sp" ? `<div class="menu" role="menu">
+          <button role="menuitem" id="spDone">✓ La hicimos (anotar en el historial)</button>
+          <button role="menuitem" id="spPdf">Descargar PDF</button>
+          <button role="menuitem" id="spCopy">Copiar la compra para WhatsApp</button>
+          <a role="menuitem" href="https://wa.me/?text=${encodeURIComponent(whatsappText(false, r))}" target="_blank" rel="noopener">Mandar la compra por WhatsApp</a>
+          <button role="menuitem" data-spec="${r.id}">Quitar de especiales</button></div>` : ""}</div></div></div>
+    ${r.prev && r.prev.when ? `<p class="rnote">⏰ ${r.prev.when === "noche" ? "La noche anterior" : "Unas horas antes"}: ${esc(r.prev.text)}</p>` : ""}
+    <div class="rppl"><span>Para</span><button class="iconbtn" id="spMinus" aria-label="Uno menos">−</button><b>${sp.people}</b><button class="iconbtn" id="spPlus" aria-label="Uno más">+</button><span>personas</span><span class="hint">· la receta es para ${serves(r)}</span></div>
+    <div class="frow" style="margin:12px 0"><div><b>Sumar a la compra de la semana</b><small>Sus ingredientes van a la lista de Compras</small></div><button class="sw" role="switch" aria-checked="${!!sp.addToWeek}" id="spWeekSw" aria-label="Sumar a la compra de la semana"></button></div>
+    <div class="sptitle"><h3 class="rsec" style="margin:0">Compras <span class="hint" style="font-family:var(--body);font-weight:500">· ${pend} por comprar${cs.n ? " · aprox. " + money(cs.tot) : ""}</span></h3>${all.some(x => sp.checked[x.p.id]) ? `<button class="linkbtn" id="spUncheck">Desmarcar todo</button>` : ""}</div>
+    <div class="shopgrid">${shopListHTML(g, sp.checked, "sp:" + r.id) || `<p class="hint">Ningún ingrediente está vinculado a un producto.</p>`}</div>
+    ${jumboBox("spPrice", {g, title: r.name + " para " + sp.people, checked: sp.checked})}`;
 }
 function toggleSpecial(id){
   const r = recById(id); if (!r) return;
@@ -2561,8 +2585,10 @@ function prodSubtabs(){ const ns = Object.keys(state.stock).filter(id => prodByI
   return `<div class="chips" style="margin:0 0 10px;align-items:center"><button class="chip" data-prodview="todos" aria-pressed="${prodView !== "encasa"}">Todos</button><button class="chip" data-prodview="encasa" aria-pressed="${prodView === "encasa"}">🏠 Lo que tengo en casa${ns ? " (" + ns + ")" : ""}</button><input id="prodQ" placeholder="Buscar producto" value="${esc(prodQ)}" style="max-width:220px;margin-left:6px"></div>`; }
 function prodSubtabsOLD(){ const ns = Object.keys(state.stock).filter(id => prodById(id)).length;
   return `<div class="subtabs" role="tablist"><button role="tab" data-prodview="todos" aria-selected="${prodView === "todos"}">📦 Todos los productos</button><button role="tab" data-prodview="encasa" aria-selected="${prodView === "encasa"}">🏠 En casa${ns ? ` <span class="tabn" style="background:var(--accent)">${ns}</span>` : ""}</button></div>`; }
+let prodMode = "casa";
 function viewProductos(){
-  return viewProductosAll().replace("<!--SUB-->", prodSubtabs());
+  if (prodMode !== "tabla") return `<div>` + viewEnCasa() + `</div><div class="dmore"><button class="btn" id="prodTable">Editar productos: marcas, presentación y Jumbo</button></div>`;
+  return `<div class="toolbar" style="margin-top:0"><button class="btn small" id="prodBack">← Volver a lo que hay en casa</button></div>` + viewProductosAll().replace("<!--SUB-->", `<div class="chips" style="margin:0 0 10px"><input id="prodQ" type="search" placeholder="Buscar producto" value="${esc(prodQ)}" style="max-width:260px"></div>`);
 }
 function viewProductosAll(){
   const usage = {};
@@ -3780,7 +3806,7 @@ document.addEventListener("click", async e => {
   if (superMode) { if (t && superClick(t)) return; if (t && t.closest(".super")) return; }
   if (t && t.id === "superOpen") { openSuper(); return; }
   if (!t) { if (e.target.id === "calcBackdrop") closeCalc(); else if (e.target.id === "backdrop") closeModal(); else if (e.target.id === "sheetBack") closeSheet(); return; }
-  if (t.id === "weekMore" || t.id === "shopMore" || t.id === "recMore") { const k = {weekMore: "week", shopMore: "shop", recMore: "rec"}[t.id]; openMenu = openMenu === k ? null : k; return render(); }
+  if (t.id === "weekMore" || t.id === "shopMore" || t.id === "recMore" || t.id === "spMore") { const k = {weekMore: "week", shopMore: "shop", recMore: "rec", spMore: "sp"}[t.id]; openMenu = openMenu === k ? null : k; return render(); }
   if (t.id === "recFilt") { recSheet = true; return renderSheet(); }
   if (t.id === "sheetClose2") return closeSheet();
   if (t.id === "recFiltClear") { recFilter.cat = "Todas"; recFilter.tag = ""; recFilter.quick = false; recFilter.long = false; return render(); }
@@ -3838,7 +3864,8 @@ document.addEventListener("click", async e => {
   if (t.id === "asadoOpen") return openAsado();
   if (t.id === "mCalc") return openCalc(modal.draft.id);
   if (t.id === "mMold") { const r = recById(modal.draft.id); openGCalc("molde"); gcalc.rid = r.id; gKeep(); return; }
-  if (t.dataset.prodview) { prodView = t.dataset.prodview; if (t.dataset.tab) { tab = t.dataset.tab; lsSet(LS_TAB, tab); window.scrollTo(0, 0); } return render(); }
+  if (t.id === "prodTable" || t.id === "prodBack") { prodMode = t.id === "prodTable" ? "tabla" : "casa"; render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.prodview) { prodMode = t.dataset.prodview === "encasa" ? "casa" : prodMode; prodView = t.dataset.prodview; if (t.dataset.tab) { tab = t.dataset.tab; lsSet(LS_TAB, tab); window.scrollTo(0, 0); } return render(); }
   if (t.dataset.statrange) { statRange = t.dataset.statrange; return render(); }
   if (t.dataset.menuview === "mp" || t.dataset.menuview === "stats") { tab = t.dataset.menuview === "mp" ? "despensa" : "historial"; lsSet(LS_TAB, tab); render(); window.scrollTo(0, 0); return; }
   if (t.dataset.menuview) { menuView = t.dataset.menuview; lsSet("menu-casa-menuview", menuView); if (t.dataset.tab) { tab = t.dataset.tab; lsSet(LS_TAB, tab); window.scrollTo(0, 0); } return render(); }
@@ -3867,7 +3894,9 @@ document.addEventListener("click", async e => {
   if (t.dataset.rmextra !== undefined) { state.extra.splice(+t.dataset.rmextra, 1); save(); toast("Quitada de la compra"); return render(); }
   if (t.id === "mPm" || t.id === "mPp") { const st = isMP(modal.draft) ? serves(modal.draft) : 1; modal.people = Math.min(200 * st, Math.max(st, modal.people + (t.id === "mPp" ? st : -st))); return renderModal(); }
   if (t.dataset.spec) { toggleSpecial(t.dataset.spec); return; }
-  if (t.dataset.spsel) { spSel = t.dataset.spsel; return render(); }
+  if (t.dataset.spsel) { spSel = t.dataset.spsel; spOpen = true; render(); window.scrollTo(0, 0); return; }
+  if (t.id === "spBack") { spOpen = false; return render(); }
+  if (t.id === "spWeekSw") { const r = recById(spSel); if (r) { spOf(r).addToWeek = !spOf(r).addToWeek; save(); render(); toast(spOf(r).addToWeek ? "Se suma a la lista de la semana" : "Ya no se suma a la semana"); } return; }
   if (t.dataset.spcook) { openCook(t.dataset.spcook, spOf(recById(t.dataset.spcook)).people); return; }
   const spr = tab === "especiales" ? recById(spSel) : null;
   if (spr) {
@@ -3876,7 +3905,7 @@ document.addEventListener("click", async e => {
       state.history.push({id: newId("h", state.history), date: today, kind: "especial", rid: spr.id, people: spOf(spr).people}); save(); render(); toast("Anotada en el historial"); return; }
     if (t.id === "spUncheck") { spOf(spr).checked = {}; save(); return render(); }
     if (t.id === "spPdf") { try { await exportSpecialPDF(spr); } catch (err) { console.error(err); toast("No se pudo generar el PDF"); } return; }
-    if (t.id === "spCopy") { const ta = $("#spWa"); try { await navigator.clipboard.writeText(ta.value); toast("Copiado. Pegalo en WhatsApp"); } catch (err) { ta.focus(); ta.select(); toast("Seleccioné el texto: copialo con Ctrl+C o Copiar"); } return; }
+    if (t.id === "spCopy") { try { await navigator.clipboard.writeText(whatsappText(false, recById(spSel))); toast("Copiado. Pegalo en WhatsApp"); } catch (err) { toast("No pude copiar: usá «Mandar la compra por WhatsApp»"); } return; }
   }
   if (t.id === "mClose" ) return closeModal();
   if (t.id === "mEdit") { modal.edit = true; return renderModal(); }
@@ -3911,7 +3940,7 @@ document.addEventListener("click", async e => {
   if (t.id === "toggleWhere") { showWhere = !showWhere; return render(); }
   if (t.id === "priceOpen") { priceOpen = !priceOpen; priceMsg = ""; return render(); }
   if (t.id === "priceClose") { priceOpen = false; return render(); }
-  if (t.id === "pricesGo") { tab = "productos"; lsSet(LS_TAB, tab); priceOpen = true; priceMsg = ""; render(); window.scrollTo(0, 0); return; }
+  if (t.id === "pricesGo") { prodMode = "tabla"; tab = "productos"; lsSet(LS_TAB, tab); priceOpen = true; priceMsg = ""; render(); window.scrollTo(0, 0); return; }
   if (t.id === "bmCopy") { try { await navigator.clipboard.writeText(bookmarkletHref()); toast("Copiado: pegalo como dirección del favorito"); } catch (err) { toast("No pude copiar: arrastrá el botón"); } return; }
   if (t.dataset.pricesave) { try { const r = applyPrices($("#" + t.dataset.pricesave).value); save(); render(); toast(`${r.n} precios guardados${r.up ? ` · ${r.up} subieron` : ""}${r.down ? ` · ${r.down} bajaron` : ""}`); } catch (err) { toast(err.message || "No pude leer los precios"); } return; }
   if (t.id === "priceSave") { try { const r = applyPrices($("#priceIn").value); save(); priceMsg = `✓ ${r.n} precios guardados${r.up ? ` · ${r.up} subieron` : ""}${r.down ? ` · ${r.down} bajaron` : ""}`; render(); toast(priceMsg.slice(2)); } catch (err) { toast(err.message || "No pude leer los precios"); } return; }
