@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#3B6E7A">
+<meta name="theme-color" content="#3D6E9E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Menú">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -17,28 +17,28 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
-/* Berenjena: gris lavanda claro, violeta como único acento fuerte; mucho aire, pocos bordes. Outfit para títulos, Manrope para el resto. */
+/* Azul calmo: gris azulado muy claro, un azul suave como único acento; mucho aire, pocos bordes. Outfit para títulos, Manrope para el resto. */
 :root{
-  --bg:#F3F2F6; --surface:#FFFFFF; --sunk:#ECEAF1; --line:#E3E0EA;
-  --fg:#241F2E; --muted:#6E6880; --accent:#5B3A8C; --accent-fg:#FFFFFF; --accent-soft:#ECE6F5; --red:#B8443A;
-  --dish:#F6F4FA; --dish-line:#E3E0EA; --salsa:#FBEEEA; --salsa-line:#EBC9C0; --salsa-fg:#9C3B31; --gua:#E9F3EC; --gua-line:#BFD9C7; --gua-fg:#2F6B45;
-  --amber:#8A5A12; --amber-soft:#FBF1DC; --ice:#2C5A85; --ice-soft:#E6EEF6;
+  --bg:#F2F5F8; --surface:#FFFFFF; --sunk:#E8EEF3; --line:#DEE5EC;
+  --fg:#1F2933; --muted:#62707E; --accent:#3D6E9E; --accent-fg:#FFFFFF; --accent-soft:#E3EDF7; --red:#B8443A;
+  --dish:#F5F8FB; --dish-line:#DEE5EC; --salsa:#FBEEEA; --salsa-line:#EBC9C0; --salsa-fg:#9C3B31; --gua:#E9F3EC; --gua-line:#BFD9C7; --gua-fg:#2F6B45;
+  --amber:#8A5A12; --amber-soft:#FBF1DC; --ice:#2B6F6A; --ice-soft:#E2F1EF;
   --ok:#3B7A5A; --warn:#A6402F; --danger:#B3261E; --star:#C2453A;
   --display:"Outfit", system-ui, sans-serif;
   --body:"Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r:14px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#16131C; --surface:#1F1B27; --sunk:#282332; --line:#3A3446;
-  --fg:#ECE8F3; --muted:#A49DB3; --accent:#B79BE0; --accent-fg:#1A1424; --accent-soft:#2C2340; --red:#E8857A;
-  --dish:#241F2E; --dish-line:#3A3446; --salsa:#2E1F1E; --salsa-line:#6B3C36; --salsa-fg:#F0A99E; --gua:#1C2B22; --gua-line:#3C6149; --gua-fg:#9ED3B1;
-  --amber:#E8C88E; --amber-soft:#2A2214; --ice:#9CC3EA; --ice-soft:#1C2836;
+  --bg:#12171D; --surface:#1A2129; --sunk:#222B35; --line:#33404D;
+  --fg:#E6ECF2; --muted:#9AA7B4; --accent:#8DB8E3; --accent-fg:#0F1820; --accent-soft:#1E2C3A; --red:#E8857A;
+  --dish:#1E2630; --dish-line:#33404D; --salsa:#2E1F1E; --salsa-line:#6B3C36; --salsa-fg:#F0A99E; --gua:#1C2B22; --gua-line:#3C6149; --gua-fg:#9ED3B1;
+  --amber:#E8C88E; --amber-soft:#2A2214; --ice:#8FD3CB; --ice-soft:#183230;
   --ok:#86C2A0; --warn:#F0A99E; --danger:#F08A80; --star:#EF8478; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#16131C; --surface:#1F1B27; --sunk:#282332; --line:#3A3446;
-  --fg:#ECE8F3; --muted:#A49DB3; --accent:#B79BE0; --accent-fg:#1A1424; --accent-soft:#2C2340; --red:#E8857A;
-  --dish:#241F2E; --dish-line:#3A3446; --salsa:#2E1F1E; --salsa-line:#6B3C36; --salsa-fg:#F0A99E; --gua:#1C2B22; --gua-line:#3C6149; --gua-fg:#9ED3B1;
-  --amber:#E8C88E; --amber-soft:#2A2214; --ice:#9CC3EA; --ice-soft:#1C2836;
+  --bg:#12171D; --surface:#1A2129; --sunk:#222B35; --line:#33404D;
+  --fg:#E6ECF2; --muted:#9AA7B4; --accent:#8DB8E3; --accent-fg:#0F1820; --accent-soft:#1E2C3A; --red:#E8857A;
+  --dish:#1E2630; --dish-line:#33404D; --salsa:#2E1F1E; --salsa-line:#6B3C36; --salsa-fg:#F0A99E; --gua:#1C2B22; --gua-line:#3C6149; --gua-fg:#9ED3B1;
+  --amber:#E8C88E; --amber-soft:#2A2214; --ice:#8FD3CB; --ice-soft:#183230;
   --ok:#86C2A0; --warn:#F0A99E; --danger:#F08A80; --star:#EF8478; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg)}
@@ -402,13 +402,13 @@ select,input,textarea{border-radius:10px}
 .stitle{font-size:1.35rem;margin:0 0 6px}
 .block{margin-top:26px}
 .more{position:relative}
-.menu{position:absolute;right:0;top:calc(100% + 6px);z-index:12;min-width:250px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(36,31,46,.16);padding:6px;display:grid}
+.menu{position:absolute;right:0;top:calc(100% + 6px);z-index:12;min-width:250px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(20,33,46,.16);padding:6px;display:grid}
 .menu [role=menuitem]{display:block;text-align:left;border:0;background:none;font:500 .93rem var(--body);color:var(--fg);padding:10px 12px;border-radius:9px;cursor:pointer;text-decoration:none}
 .menu [role=menuitem]:hover,.menu [role=menuitem]:focus-visible{background:var(--sunk)}
 .menu [role=menuitem]:disabled{color:var(--muted);opacity:.6;cursor:default;background:none}
 .seg{display:inline-flex;gap:2px;background:var(--sunk);border-radius:999px;padding:3px;margin:0 0 14px;max-width:100%;overflow-x:auto}
 .seg button{border:0;background:none;font:600 .88rem var(--body);color:var(--muted);padding:7px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
-.seg button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(36,31,46,.1)}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(20,33,46,.1)}
 .segn{display:inline-block;min-width:18px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:.72rem;line-height:18px;text-align:center;margin-left:4px}
 .nudge{display:flex;gap:10px;align-items:flex-start;background:var(--amber-soft);color:var(--fg);border-radius:14px;padding:11px 14px;margin:0 0 14px;font-size:.93rem}
 .nudge .ni{line-height:1.4}.remlist{margin:8px 0 0;padding-left:18px;display:grid;gap:4px}
@@ -445,8 +445,8 @@ select,input,textarea{border-radius:10px}
   .wnote{padding-left:0}
 }
 /* hoja de una comida */
-.sheetback{position:fixed;inset:0;z-index:18;background:rgba(36,31,46,.38);display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--surface);color:var(--fg);width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));display:grid;gap:10px;box-shadow:0 -10px 40px rgba(36,31,46,.2)}
+.sheetback{position:fixed;inset:0;z-index:18;background:rgba(20,33,46,.38);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);color:var(--fg);width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));display:grid;gap:10px;box-shadow:0 -10px 40px rgba(20,33,46,.2)}
 @media (min-width:760px){.sheetback{align-items:center}.sheet{border-radius:22px;padding:18px 22px 22px}.sheet .grab{display:none}}
 .grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 4px}
 .shead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
@@ -490,6 +490,65 @@ select,input,textarea{border-radius:10px}
 .mpbox h2{font-size:1.15rem}
 .notitle > .toolbar:first-child{margin-top:0}.notitle > .toolbar:first-child > h2{display:none}
 .mpstock{margin-top:4px}
+/* recetas */
+.rsearch input{font-size:1rem;padding:12px 14px;border-radius:14px}
+.qchips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
+.chip{font-size:.84rem;padding:7px 13px}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.fchip{color:var(--accent);background:var(--accent-soft);border-color:var(--accent-soft)}
+.fchip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.rcount{margin:6px 0 4px}
+.rlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));column-gap:28px}
+.rrow{display:flex;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:0}
+.rrow:hover{background:var(--surface)}
+.rrow .rt{flex:1;min-width:0;display:grid}
+.rrow b{font-weight:600;font-size:1rem}
+.rrow small{color:var(--muted);font-size:.82rem}
+.rmk{display:flex;gap:6px;font-size:.95rem}
+.star-on{color:var(--star)}
+.fgrp{display:grid;gap:8px;margin-bottom:6px}.fgrp h3{margin:0}
+/* ficha */
+.backdrop.rv .modal.rview{width:min(1020px,100%);padding:20px 26px 26px;gap:12px;border-radius:22px}
+.rtop{display:flex;align-items:center;gap:8px}.rtop .sp{flex:1}
+.rtop .star{font-size:1.2rem;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface)}
+.rmore{position:relative}
+.rhead{display:grid;gap:4px}
+.rmeta{color:var(--muted);font-size:.9rem}
+.rtitle{font-size:2.1rem;font-weight:700;letter-spacing:-.025em;line-height:1.08;margin:0}
+.racts{display:flex;gap:8px;flex-wrap:wrap}.racts .btn{padding:12px 22px;font-size:.98rem}
+.rppl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted)}.rppl b{color:var(--fg);font-size:1.1rem;min-width:1.4em;text-align:center}
+.rnote{margin:0;background:var(--amber-soft);color:var(--amber);border-radius:12px;padding:9px 12px;font-size:.92rem}
+.rnote.blue{background:var(--accent-soft);color:var(--fg)}
+.rbuy{border:1px solid var(--line);border-radius:14px;padding:12px}
+.rcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:34px;margin-top:6px}
+.rsec{font-family:var(--display);font-size:1.15rem;font-weight:600;color:var(--fg);margin:8px 0 8px}
+.rsub{font-size:.85rem;color:var(--muted);margin:10px 0 2px;font-weight:600}
+.ingl{list-style:none;margin:0;padding:0}
+.ingl li{display:grid;grid-template-columns:minmax(64px,auto) 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.ingl li b{font-weight:700;white-space:nowrap}
+.stepl{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.stepl li{display:grid;grid-template-columns:24px 1fr;gap:10px;line-height:1.55}
+.stepl li span{font-family:var(--display);font-weight:700;color:var(--accent)}
+.rtext{white-space:pre-wrap;line-height:1.55}
+.rfolds{margin-top:14px}
+.rfold{border-top:1px solid var(--line)}.rfold:last-child{border-bottom:1px solid var(--line)}
+.rfold summary{display:flex;justify-content:space-between;gap:10px;padding:12px 2px;cursor:pointer;font-weight:600;list-style:none}
+.rfold summary::-webkit-details-marker{display:none}
+.rfold summary small{color:var(--muted);font-weight:400}
+.rfold summary::after{content:"›";color:var(--muted);transition:transform .15s}.rfold[open] summary::after{transform:rotate(90deg)}
+.rfold summary small{margin-left:auto}
+.rfin{padding:0 2px 12px}
+.moreopts{border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.moreopts > summary{cursor:pointer}
+.moregrid{display:grid;gap:12px;margin-top:12px}
+@media (max-width:760px){
+  .backdrop.rv{padding:0;align-items:stretch}
+  .backdrop.rv .modal.rview{border-radius:0;min-height:100%;padding:14px 18px calc(30px + env(safe-area-inset-bottom,0px))}
+  .rcols{grid-template-columns:1fr;gap:6px}
+  .rtitle{font-size:1.8rem}
+  .racts .btn{flex:1}
+  .rlist{grid-template-columns:1fr}
+}
 /* navegación en el celular */
 @media (max-width:760px){
   header.top .wrap{padding-block:10px;gap:8px}
@@ -1948,7 +2007,8 @@ function render(){
   $("#servNum").textContent = state.comensales;
   const m = $("#main");
   const head = t => `<div class="pagehead"><div><h2 class="ptitle">${t}</h2></div></div>`;
-  const segRec = () => head("Recetas") + seg([["recetas", "Recetas"], ["especiales", "Especiales"]], tab);
+  const segRec = () => `<div class="pagehead"><div><h2 class="ptitle">Recetas</h2></div><div class="pacts"><button class="btn primary" id="newRec">＋ Nueva receta</button>
+      <div class="more"><button class="iconbtn" id="recMore" aria-label="Más opciones de recetas" aria-expanded="${openMenu === "rec"}">⋯</button>${openMenu === "rec" ? `<div class="menu" role="menu">${CALC_LIST.map(([id, ic, n]) => `<button role="menuitem" data-calcgo="${id}">${ic} ${esc(n)}</button>`).join("")}<button role="menuitem" id="catsBtn">Categorías y etiquetas</button></div>` : ""}</div></div></div>` + seg([["recetas", "Recetas"], ["especiales", "Especiales"]], tab);
   const segDesp = () => head("Despensa") + seg([["despensa", "Freezer y meal prep"], ["productos", "Productos y lo que hay en casa"]], tab);
   const nt = h => `<div class="notitle">${h}</div>`;
   const segMas = () => `<div class="pagehead"><div><h2 class="ptitle">Más</h2></div></div>` + seg([["historial", "Historial"], ["guardados", "Menús guardados"], ["datos", "Tus datos"]], tab);
@@ -2056,6 +2116,7 @@ function viewMP(){
 }
 function renderSheet(){
   const root = $("#sheetRoot"); if (!root) return;
+  if (recSheet && tab === "recetas") { const k = root.querySelector(".sheet") ? root.querySelector(".sheet").scrollTop : 0; root.innerHTML = recSheetHTML(); root.querySelector(".sheet").scrollTop = k; return; }
   if (!sheet) { if (root.innerHTML) root.innerHTML = ""; return; }
   const {i, f} = sheet, d = state.days[i], L = f === "lunch" ? "almuerzo" : "cena", r = recById(d[f]), sd = recById(d[f + "Salsa"]), ppl = slotPeople(i, f);
   const prevI = (i + 6) % 7, nextI = (i + 1) % 7;
@@ -2086,7 +2147,19 @@ function renderSheet(){
     <div class="shead"><div><h2 id="shT">${DAYS[i]}, ${L}</h2><div class="hint">${sub}</div></div><button class="iconbtn" id="sheetClose" aria-label="Cerrar">✕</button></div>${b}</div></div>`;
   root.querySelector(".sheet").scrollTop = keep;
 }
-function closeSheet(){ sheet = null; renderSheet(); }
+function closeSheet(){ sheet = null; recSheet = false; renderSheet(); }
+function recSheetHTML(){
+  const n = recList().length, chip = (k, l) => `<button class="chip" data-cat="${esc(k)}" aria-pressed="${recFilter.cat === k}">${esc(l)}</button>`;
+  const cats = allCats().filter(c => !["Guarnición", "Salsa", "Base", "Otro"].includes(c) && state.recipes.some(r => r.cat === c));
+  return `<div class="sheetback" id="sheetBack"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rfT"><div class="grab" aria-hidden="true"></div>
+    <div class="shead"><h2 id="rfT">Filtrar recetas</h2><button class="iconbtn" id="sheetClose" aria-label="Cerrar">✕</button></div>
+    <div class="fgrp"><h3>Tipo</h3><div class="chips">${chip("Platos", "Platos")}${chip("Guarnición", "Guarniciones")}${chip("Salsas y bases", "Salsas y bases")}${chip("Especiales", "Especiales")}</div></div>
+    <div class="fgrp"><h3>Categoría</h3><div class="chips">${cats.map(c => chip(c, c)).join("")}</div></div>
+    ${state.tags.length ? `<div class="fgrp"><h3>Etiquetas</h3><div class="chips">${state.tags.map(t => `<button class="chip" data-tagf="${esc(t)}" aria-pressed="${recFilter.tag === t}">${esc(t)}</button>`).join("")}</div></div>` : ""}
+    <div class="frow"><div><b>Rápidas</b><small>Hasta 30 minutos</small></div><button class="sw" role="switch" aria-checked="${!!recFilter.quick}" id="quickF" aria-label="Rápidas"></button></div>
+    <div class="frow"><div><b>Hace mucho que no la hacemos</b><small>Más de un mes, o nunca</small></div><button class="sw" role="switch" aria-checked="${!!recFilter.long}" id="longF" aria-label="Hace mucho que no la hacemos"></button></div>
+    <div class="sacts"><button class="btn" id="recFiltClear">Limpiar</button><button class="btn primary" id="sheetClose2" style="flex:1">Ver ${n} ${n === 1 ? "receta" : "recetas"}</button></div></div></div>`;
+}
 function viandaBox(i){
   const j = (i + 6) % 7, pv = state.days[j], r = recById(pv.dinner), side = recById(pv.dinnerSalsa);
   return `<div class="vbox"><div>🍱 <b>${r ? esc(mealName(pv, "dinner")) : "Vianda"}</b></div><div class="vsub">${r ? `Sobras de la cena del ${esc(pv.day.toLowerCase())}: esa noche se cocina para ${state.comensales + viandaN()}.` : `Sale de la cena del ${esc(pv.day.toLowerCase())}, que todavía está vacía.`}</div>${r ? `<button class="open" data-open="${r.id}"${side ? ` data-side="${side.id}"` : ""} data-people="${state.comensales + viandaN()}" data-vn="${viandaN()}">Ver</button>` : ""}</div>`;
@@ -2441,11 +2514,12 @@ function renderCats(){
   </div></div>`;
 }
 function starBtn(r){ return `<button class="star" data-fav="${r.id}" aria-pressed="${!!r.fav}" title="${r.fav ? "Quitar de favoritos" : "Agregar a favoritos"}" aria-label="${r.fav ? "Quitar de favoritos" : "Agregar a favoritos"}">${r.fav ? "★" : "☆"}</button>`; }
-function viewRecetas(){
+const QUICK_CATS = [["Todas", "Todas"], ["★ Favoritos", "★ Favoritas"], ["🍱 Para vianda", "🍱 Vianda"], ["🥫 Meal prep", "🥫 Meal prep"]];
+const recFilterN = () => (QUICK_CATS.some(([k]) => k === recFilter.cat) ? 0 : 1) + (recFilter.tag ? 1 : 0) + (recFilter.quick ? 1 : 0) + (recFilter.long ? 1 : 0);
+function recList(){
   const lm = lastMade();
-  const cats = ["Todas", "★ Favoritos", "Especiales", "Platos", "🍱 Para vianda", "🥫 Meal prep", "Salsas y bases", ...allCats().filter(c => state.recipes.some(r => r.cat === c) && !["Salsa","Base"].includes(c))];
   const q = recFilter.q.trim().toLowerCase();
-  const list = state.recipes.filter(r => {
+  return state.recipes.filter(r => {
     const f = recFilter.cat;
     if (f === "Platos" && isSide(r)) return false;
     if (f === "🍱 Para vianda" && (isSide(r) || r.special || r.vianda === false)) return false;
@@ -2459,7 +2533,17 @@ function viewRecetas(){
     if (recFilter.long && (r.special || isSalsa(r) || (lm[r.id] && daysAgo(lm[r.id].date) < 28))) return false;
     return !q || r.name.toLowerCase().includes(q) || ingLines(r, serves(r)).join(" ").toLowerCase().includes(q);
   }).sort((a,b) => recFilter.long ? ((!!b.fav - !!a.fav) || (lm[a.id] ? lm[a.id].date : "") .localeCompare(lm[b.id] ? lm[b.id].date : "") || a.name.localeCompare(b.name, "es")) : a.name.localeCompare(b.name, "es"));
-  let h = `<div class="toolbar"><h2>Recetas</h2><input id="recSearch" placeholder="Buscar receta o ingrediente" value="${esc(recFilter.q)}" style="max-width:260px">${calcMenuHTML()}<button class="btn" id="catsBtn">Categorías y etiquetas</button><button class="btn primary" id="newRec">Nueva receta</button></div>
+}
+let recSheet = false;
+function viewRecetas(){
+  const lm = lastMade(), list = recList(), nf = recFilterN();
+  const icons = r => [r.fav ? `<span class="star-on" title="Favorita">★</span>` : "", r.special ? `<span title="Especial">🎉</span>` : "", isMP(r) ? `<span title="Meal prep">🥫</span>` : "", fzOf(r.id) && !isMP(r) ? `<span title="Hay en el freezer">🧊</span>` : "", r.vianda && !isSide(r) && !r.special ? `<span title="Va en vianda">🍱</span>` : ""].filter(Boolean).slice(0, 2).join("");
+  let h = `<div class="rsearch"><input id="recSearch" type="search" placeholder="🔍 Buscar receta o ingrediente" value="${esc(recFilter.q)}" aria-label="Buscar receta o ingrediente"></div>
+    <div class="qchips">${QUICK_CATS.map(([k, l]) => `<button class="chip" data-cat="${esc(k)}" aria-pressed="${recFilter.cat === k}">${l}</button>`).join("")}<button class="chip fchip" id="recFilt" aria-pressed="${nf > 0}">Filtrar${nf ? ` (${nf})` : ""} ▾</button></div>
+    <p class="hint rcount">${list.length} ${list.length === 1 ? "receta" : "recetas"}${nf ? ` · <button class="linkbtn" id="recFiltClear">Sacar filtros</button>` : ""}</p>
+    <div class="rlist">${list.map(r => `<div class="rrow" role="button" tabindex="0" data-open="${r.id}"><div class="rt"><b>${esc(r.name)}</b><small>${esc([isMP(r) ? "Meal prep · rinde " + mpYield(r) : r.cat, r.tTotal ? fmtMin(r.tTotal) : ""].filter(Boolean).join(" · "))}${recFilter.long && lm[r.id] ? ` · ↻ ${agoText(daysAgo(lm[r.id].date))}` : ""}</small></div><div class="rmk">${icons(r)}</div></div>`).join("") || `<p class="hint">No hay recetas con esos filtros.</p>`}</div>`;
+  return h;
+  h = `<div class="toolbar"><h2>Recetas</h2><input id="recSearch" placeholder="Buscar receta o ingrediente" value="${esc(recFilter.q)}" style="max-width:260px">${calcMenuHTML()}<button class="btn" id="catsBtn">Categorías y etiquetas</button><button class="btn primary" id="newRec">Nueva receta</button></div>
     <div class="chips">${cats.map(c => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${c === recFilter.cat}">${esc(c)}</button>`).join("")}</div>
     <div class="chips" style="margin-top:6px"><button class="chip" id="quickF" aria-pressed="${!!recFilter.quick}">⏱ Rápidas (hasta 30 min)</button><button class="chip" id="longF" aria-pressed="${!!recFilter.long}" title="Platos que no hacen hace más de un mes (o nunca)">↻ Hace mucho que no la hacemos</button>${state.tags.map(t => `<button class="chip tagchip" data-tagf="${esc(t)}" aria-pressed="${recFilter.tag === t}">${esc(t)}</button>`).join("")}</div>
     <div class="hint" style="margin-top:8px">${list.length} recetas${recFilter.cat === "★ Favoritos" ? " · Las que marcaste con ★ porque te gustan: aparecen primero en el menú y las podés imprimir como tu recetario." + (!list.length ? " Tocá la ☆ de una receta para sumarla." : "") : ""}${recFilter.long ? " · Platos que no hacen hace más de un mes (o nunca): primero tus favoritas, y las más olvidadas arriba" + (state.history.length ? "" : " (todavía no hay nada en el historial: por eso aparecen todas)") + "." : ""}${recFilter.cat === "Especiales" ? " · Las que se hacen por fuera del menú semanal. Para marcar otra: abrila y tocá «🎉 Marcar como especial»." : ""}</div><div class="reclist">`;
@@ -2570,27 +2654,37 @@ function renderModal(){
   }).join("");
   let body;
   if (!modal.edit) {
-    const n = recipeUseCount(d.id);
-    body = `<div class="head"><h2>${esc(d.name)}</h2>${starBtn(recById(d.id) || d)}<button class="btn small primary" id="mCook">👩‍🍳 Cocinar</button><button class="btn small" id="mBuy" aria-pressed="${!!modal.buy}">🛒 Comprar</button>${!isSalsa(d) || d.cat === "Salsa" ? `<button class="btn small" id="mFz" aria-pressed="${!!modal.fz}" title="Anotá las porciones que congelaste">🧊 Al freezer${fzOf(d.id) ? " (" + fzOf(d.id) + ")" : ""}</button>` : ""}${isPaella(d) ? `<button class="btn small" id="mCalc">🥘 Calcular paellera</button>` : ""}${d.mold ? `<button class="btn small" id="mMold">🧁 Para mi molde</button>` : ""}<button class="btn small" data-spec="${d.id}">${recById(d.id) && recById(d.id).special ? "Quitar la marca de especial" : "🎉 Marcar como especial"}</button><button class="btn small" id="mPdf">PDF</button><button class="btn small" id="mEdit">Editar</button><button class="btn small" id="mClose">Cerrar</button></div>
-      <div class="hint">${esc(d.cat)}${timeLabel(d) ? " · " + esc(timeLabel(d)) : ""}${(d.tags || []).length ? " · " + d.tags.map(esc).join(", ") : ""}${n ? ` · en el menú ${n} ${n === 1 ? "vez" : "veces"}` : ""}${(() => { const c = recipeCost(d, modal.people); return c.tot > 0 ? ` · <b>💲 aprox. ${money(c.tot)}</b> para ${modal.people}${c.miss ? ` (${c.miss} ingredientes sin precio)` : ""}` : ""; })()}${(() => { const x = lastMade()[d.id]; return x ? ` · <b>última vez: ${agoText(daysAgo(x.date))}</b> (${fmtDay(x.date)}, ${x.count} ${x.count === 1 ? "vez" : "veces"} en el historial)` : ""; })()}${d.link ? ` · <a href="${esc(d.link)}" target="_blank" rel="noopener">receta original</a>` : ""}</div>
-      ${!isSide(d) && !d.special && state.recipes.some(isGuar) ? `<div class="sidepick"><label for="mSide">${pastaish(d) ? "🍝 Con salsa o guarnición" : "🥗 Con guarnición"}</label><select id="mSide">${sideOptions(d, modal.side, pastaish(d) ? "— sola —" : "— sin guarnición —")}</select>${recById(modal.side) ? `<span class="hint">Se suma a ingredientes, compras, modo cocina y PDF.</span>` : ""}</div>` : ""}
-      ${modal.fz ? `${d.fz && d.fz.can === false ? `<div class="err" style="margin:6px 0">Ojo: según su ficha, esta receta no conviene congelarla.</div>` : ""}<div class="saveform" style="margin:6px 0"><span>🧊 ${isMP(d) ? "¿Cuánto guardaste?" : "¿Cuántas porciones congelaste?"}${d.fz && d.fz.can !== false ? ` <span class="hint">(dura ${fzMonths(d)} ${fzMonths(d) === 1 ? "mes" : "meses"})</span>` : ""}</span><input id="mFzN" type="number" min="1" step="1" value="${isMP(d) ? mpQ(d) * modal.people / serves(d) : modal.vn || state.comensales}" style="max-width:80px">${isMP(d) ? `<span class="hint">${esc(d.mp.u)}</span>` : ""}<button class="btn small primary" id="mFzSave">Guardar en el freezer</button></div>` : ""}
-      ${modal.vn ? `<div class="vbox" style="margin:6px 0">🍱 Cantidades para ${modal.people}: incluye ${modal.vn} ${modal.vn === 1 ? "porción" : "porciones"} para la vianda de mañana.</div>` : ""}
-      ${d.note ? `<div class="autonote">${esc(d.note)}</div>` : ""}
-      ${d.prev && d.prev.when ? `<div class="remind">⏰ ${d.prev.when === "noche" ? "La noche anterior" : "Unas horas antes"}: ${esc(d.prev.text)}</div>` : ""}
-      ${isMP(d) ? `<div class="mpinfo">🥫 <b>Meal prep</b> · rinde ${esc(mpYield(d, modal.people / serves(d)))}${modal.people !== serves(d) ? ` (${nfmt(modal.people / serves(d))} tandas)` : " por tanda"} · en el stock: <b>${nfmt(fzOf(d.id))} ${esc(d.mp.u)}</b> <button class="linkbtn" data-mpweek="${d.id}" style="color:var(--accent);text-decoration:underline">${state.preps.includes(d.id) ? "✓ está en esta semana" : "+ sumarla a esta semana"}</button></div>` : ""}
-      ${(() => { const u = mpUses(d); return u.length ? `<div class="mpinfo">${u.map(r => `🥫 Lleva <b>${esc(r.name.toLowerCase())}</b>: ${fzOf(r.id) > 0 ? `tenés ${nfmt(fzOf(r.id))} ${esc(r.mp.u)} en el stock` : `<b style="color:var(--warn)">no te queda</b> · <button class="linkbtn" data-mpweek="${r.id}" style="color:var(--accent);text-decoration:underline">hacer una tanda esta semana</button>`}`).join("<br>")}</div>` : ""; })()}
-      <div class="grid2"><div><h3>Ingredientes para ${isMP(d) ? (modal.people === serves(d) ? "1 tanda" : nfmt(modal.people / serves(d)) + " tandas") : modal.people}${!isMP(d) && modal.people !== serves(d) ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400">(la receta original es para ${serves(d)})</span>` : ""}</h3>${(() => { const parts = partsX(d, modal.people, modal.side); const own = `<div class="pre">${esc(ingLines(d, modal.people).filter(l => !/^1 masa de tarta|^\d+ masa de tarta/i.test(l)).map(l => "• " + l).join("\n")) || "—"}</div>`;
-        return parts.length ? `<div class="hint" style="margin:4px 0 2px;font-weight:700">${esc(ownLabel(d))}</div>${own}` + parts.map(pt => `<div class="hint" style="margin:8px 0 2px;font-weight:700">${esc(pt.part)} · <button class="linkbtn" data-open="${pt.r.id}" data-people="${Math.round(pt.people * 10) / 10}" style="color:var(--accent);text-decoration:underline">ver «${esc(pt.r.name)}»</button></div><div class="pre">${esc(ingLines(pt.r, pt.people).map(l => "• " + l).join("\n"))}</div>`).join("") : own; })()}</div>
-      <div><div class="serv" style="justify-content:space-between;margin-bottom:4px"><h3>Para</h3><span style="display:flex;gap:6px;align-items:center"><button class="iconbtn" id="mPm" aria-label="Menos">−</button><span class="num">${isMP(d) ? nfmt(modal.people / serves(d)) : modal.people}</span><button class="iconbtn" id="mPp" aria-label="Más">+</button><span class="hint">${isMP(d) ? (modal.people === serves(d) ? "tanda" : "tandas") : "personas"}</span></span></div>
-        ${modal.buy ? buyPanel(d) : `<div class="hint" style="margin-bottom:4px">Lista de compras · <button class="linkbtn" id="mBuy2" style="color:var(--accent);text-decoration:underline">comprar solo para esta receta</button></div><div class="pre">${(() => { const g = computeShopping(modalEntries(d, modal.people)); const all = SHOPS.flatMap(x => g[x] || []); return all.length ? all.map(x => "• " + x.p.name + ": " + x.qty).join("\n") : "Ningún ingrediente está vinculado a un producto: esta receta no suma a la lista."; })()}</div>${(d.parts || []).length ? `<div class="hint" style="margin-top:4px">Incluye ${esc(partsOf(d, modal.people).map(x => x.part.toLowerCase()).join(" y "))}.</div>` : ""}`}
-        ${!isMP(d) && modal.people !== serves(d) ? `<div class="hint" style="margin-top:4px">Ajustado de ${serves(d)} a ${modal.people} personas. Sal y condimentos: a gusto. Para comprar, se redondea para arriba.</div>` : ""}</div></div>
-      ${d.before ? `<div><h3>Antes de empezar</h3><div class="pre">${esc(d.before)}</div></div>` : ""}
-      <div><h3>Preparación</h3><div class="pre">${esc(d.prep) || "—"}</div></div>
-      ${d.serve ? `<div><h3>Para terminar y servir</h3><div class="pre">${esc(d.serve)}</div></div>` : ""}
-      ${d.timeline ? `<div><h3>Línea de tiempo</h3><div class="pre">${esc(d.timeline)}</div></div>` : ""}
-      ${d.tips ? `<div><h3>Tips</h3><div class="pre">${esc(d.tips)}</div></div>` : ""}
-      ${d.fz ? `<div><h3>Freezer</h3>${fzFacts(d)}</div>` : ""}`;
+    const n = recipeUseCount(d.id), lmx = lastMade()[d.id], f = modal.people / serves(d), mpd = isMP(d), cost = recipeCost(d, modal.people);
+    const meta = [d.cat, timeLabel(d), mpd ? "rinde " + mpYield(d) + " por tanda" : "", !isSide(d) && !d.special && d.vianda ? "va en vianda" : "", d.fz && d.fz.can !== false ? "se congela " + fzMonths(d) + (fzMonths(d) === 1 ? " mes" : " meses") : ""].filter(Boolean);
+    const ingUl = (r, fac) => `<ul class="ingl">${(r.rows || []).filter(x => !/^\d*\s*masas? de tarta/i.test(rowText(x, fac))).map(x => { const [q, nm] = rowParts(x, fac); return `<li><b>${esc(q || "")}</b><span>${esc(q ? nm.replace(/^de /, "") : nm.charAt(0).toUpperCase() + nm.slice(1))}</span></li>`; }).join("") || "<li><span>—</span></li>"}</ul>`;
+    const parts = partsX(d, modal.people, modal.side);
+    const ings = parts.length ? `<h4 class="rsub">${esc(ownLabel(d))}</h4>${ingUl(d, f)}` + parts.map(pt => `<h4 class="rsub">${esc(pt.part)} · <button class="linkbtn" data-open="${pt.r.id}" data-people="${Math.round(pt.people * 10) / 10}">${esc(pt.r.name)}</button></h4>${ingUl(pt.r, pt.people / serves(pt.r))}`).join("") : ingUl(d, f);
+    const steps = linesOf(d.prep).map(stripBullet);
+    const sides = !isSide(d) && !d.special ? (d.sides || []).map(recById).filter(Boolean) : [];
+    const fold = (title, inner, open, sub) => inner ? `<details class="rfold"${open ? " open" : ""}><summary><span>${title}</span>${sub ? `<small>${sub}</small>` : ""}</summary><div class="rfin">${inner}</div></details>` : "";
+    const menuItems = [`<button role="menuitem" id="mEdit">Editar receta</button>`, `<button role="menuitem" id="mPdf">Descargar PDF</button>`,
+      !isSalsa(d) || d.cat === "Salsa" ? `<button role="menuitem" id="mFz">🧊 Anotar en el freezer${fzOf(d.id) ? " (hay " + nfmt(fzOf(d.id)) + ")" : ""}</button>` : "",
+      isPaella(d) ? `<button role="menuitem" id="mCalc">🥘 Calcular para mi paellera</button>` : "", d.mold ? `<button role="menuitem" id="mMold">🧁 Ajustar a mi molde</button>` : "",
+      `<button role="menuitem" data-spec="${d.id}">${recById(d.id) && recById(d.id).special ? "Quitar de especiales" : "🎉 Marcar como especial"}</button>`,
+      d.link ? `<a role="menuitem" href="${esc(d.link)}" target="_blank" rel="noopener">Ver la receta original ↗</a>` : ""].filter(Boolean).join("");
+    body = `<div class="rtop"><button class="iconbtn" id="mClose" aria-label="Cerrar">✕</button><span class="sp"></span>${starBtn(recById(d.id) || d)}<div class="rmore"><button class="iconbtn" id="mMore" aria-label="Más opciones de la receta" aria-expanded="${!!modal.more}">⋯</button>${modal.more ? `<div class="menu" role="menu">${menuItems}</div>` : ""}</div></div>
+      <div class="rhead"><div class="rmeta">${esc(meta.join(" · "))}</div><h2 class="rtitle">${esc(d.name)}</h2>
+        ${lmx || n ? `<div class="hint">${[lmx ? `La hicieron ${agoText(daysAgo(lmx.date))}` : "", n ? `en el menú esta semana` : ""].filter(Boolean).join(" · ")}</div>` : ""}</div>
+      <div class="racts"><button class="btn primary" id="mCook">👩‍🍳 Cocinar</button><button class="btn" id="mBuy" aria-pressed="${!!modal.buy}">🛒 Comprar</button></div>
+      <div class="rppl"><span>Para</span><button class="iconbtn" id="mPm" aria-label="Menos">−</button><b>${mpd ? nfmt(f) : modal.people}</b><button class="iconbtn" id="mPp" aria-label="Más">+</button><span>${mpd ? (f === 1 ? "tanda" : "tandas") : modal.people === 1 ? "persona" : "personas"}</span>${!mpd && modal.people !== serves(d) ? `<span class="hint">· la receta es para ${serves(d)}</span>` : ""}${cost.tot > 0 ? `<span class="hint">· aprox. ${money(cost.tot)}</span>` : ""}</div>
+      ${modal.fz ? `${d.fz && d.fz.can === false ? `<p class="warnline">Ojo: según su ficha, esta receta no conviene congelarla.</p>` : ""}<div class="saveform"><span>🧊 ${mpd ? "¿Cuánto guardaste?" : "¿Cuántas porciones congelaste?"}${d.fz && d.fz.can !== false ? ` <span class="hint">(dura ${fzMonths(d)} ${fzMonths(d) === 1 ? "mes" : "meses"})</span>` : ""}</span><input id="mFzN" type="number" min="1" step="1" value="${mpd ? mpQ(d) * f : modal.vn || state.comensales}" style="max-width:80px">${mpd ? `<span class="hint">${esc(d.mp.u)}</span>` : ""}<button class="btn small primary" id="mFzSave">Guardar en el freezer</button></div>` : ""}
+      ${modal.vn ? `<p class="rnote">🍱 Incluye ${modal.vn} ${modal.vn === 1 ? "porción" : "porciones"} para la vianda de mañana.</p>` : ""}
+      ${d.note ? `<p class="rnote">${esc(d.note)}</p>` : ""}
+      ${d.prev && d.prev.when ? `<p class="rnote">⏰ ${d.prev.when === "noche" ? "La noche anterior" : "Unas horas antes"}: ${esc(d.prev.text)}</p>` : ""}
+      ${mpd ? `<p class="rnote blue">🥫 En el stock: <b>${nfmt(fzOf(d.id))} ${esc(d.mp.u)}</b> · <button class="linkbtn" data-mpweek="${d.id}">${state.preps.includes(d.id) ? "✓ está en esta semana" : "Hacer una tanda esta semana"}</button></p>` : ""}
+      ${mpUses(d).map(r => `<p class="rnote blue">🥫 Lleva ${esc(r.name.toLowerCase())}: ${fzOf(r.id) > 0 ? `tenés ${nfmt(fzOf(r.id))} ${esc(r.mp.u)} en el stock` : `no te queda · <button class="linkbtn" data-mpweek="${r.id}">hacer una tanda esta semana</button>`}</p>`).join("")}
+      ${modal.buy ? `<div class="rbuy">${buyPanel(d)}</div>` : ""}
+      <div class="rcols"><div class="rcol"><h3 class="rsec">Ingredientes</h3>${ings}
+          ${sides.length || recById(modal.side) ? `<h3 class="rsec">${pastaish(d) ? "Con salsa o guarnición" : "Va bien con"}</h3><div class="chips">${[...new Set([...sides, recById(modal.side)].filter(Boolean))].map(g => `<button class="chip" data-sidepick="${g.id}" aria-pressed="${modal.side === g.id}" title="${modal.side === g.id ? "Sacar" : "Sumar a ingredientes, compras y modo cocina"}">${modal.side === g.id ? "✓ " : "+ "}${esc(g.name)}</button>`).join("")}</div>` : ""}</div>
+        <div class="rcol">${d.before ? `<h3 class="rsec">Antes de empezar</h3><div class="rtext">${esc(d.before)}</div>` : ""}
+          <h3 class="rsec">Preparación</h3>${steps.length ? `<ol class="stepl">${steps.map((x, k) => `<li><span>${k + 1}</span><div>${esc(x)}</div></li>`).join("")}</ol>` : `<p class="hint">—</p>`}
+          ${d.serve ? `<h3 class="rsec">Para terminar y servir</h3><div class="rtext">${esc(d.serve)}</div>` : ""}
+          <div class="rfolds">${fold("Línea de tiempo", d.timeline ? `<div class="rtext">${esc(d.timeline)}</div>` : "")}${fold("Tips", d.tips ? `<div class="rtext">${esc(d.tips)}</div>` : "")}${fold("🧊 Freezer", d.fz ? fzFacts(d) : "", false, d.fz ? (d.fz.can === false ? "no conviene" : fzMonths(d) + (fzMonths(d) === 1 ? " mes" : " meses")) : "")}${fold("Historial", lmx ? `<p class="hint" style="margin:0">Última vez el ${fmtDay(lmx.date)} · ${lmx.count} ${lmx.count === 1 ? "vez" : "veces"} en el historial.</p>` : "", false, lmx ? agoText(daysAgo(lmx.date)) : "")}</div></div></div>`;
   } else {
     body = `<div class="head"><h2>${d.id ? "Editar receta" : "Nueva receta"}</h2><button class="btn small" id="mCancel">Cancelar</button><button class="btn small primary" id="mSave">Guardar</button></div>
       ${modal.error ? `<div class="err">${esc(modal.error)}</div>` : ""}
@@ -2606,19 +2700,6 @@ function renderModal(){
           <option value="noche"${d.prev && d.prev.when === "noche" ? " selected" : ""}>Sí, la noche anterior</option>
           <option value="horas"${d.prev && d.prev.when === "horas" ? " selected" : ""}>Sí, unas horas antes</option></select></label>
         <label class="f">¿Qué?<input id="fPT" value="${esc(d.prev ? d.prev.text : "")}" placeholder="ej.: poner las lentejas en remojo"></label></div>
-      <div><h3 style="margin-bottom:6px">Etiquetas</h3><div class="tagpick">${state.tags.map(t => `<button class="chip tagchip" data-tagtoggle="${esc(t)}" aria-pressed="${(d.tags || []).includes(t)}">${esc(t)}</button>`).join("")}
-        <input id="fTagNew" placeholder="+ nueva etiqueta" style="max-width:170px"><button class="btn small" id="addTag">Agregar</button></div></div>
-      <div style="display:flex;gap:18px;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="fFav" style="width:auto"${d.fav ? " checked" : ""}> ★ Favorita</label>
-      <label style="display:flex;gap:8px;align-items:center;font-weight:600" title="Se hace en tanda para guardar (caldos, salsas, cubitos…)"><input type="checkbox" id="fMp" style="width:auto"${d.mp ? " checked" : ""}> 🥫 Meal prep</label>
-      ${isSide(d) ? "" : `<label style="display:flex;gap:8px;align-items:center;font-weight:600" title="Viaja bien y se recalienta: se puede cocinar de noche para el almuerzo del día siguiente"><input type="checkbox" id="fVianda" style="width:auto"${d.vianda !== false ? " checked" : ""}> 🍱 Va en vianda</label>`}
-      <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="fSpec" style="width:auto"${d.special ? " checked" : ""}> Especial <span class="hint" style="font-weight:400">(se hace por fuera del menú semanal)</span></label></div>
-      <div class="grid3" style="grid-template-columns:1fr 1fr 1fr;align-items:end"><label class="f">Molde de la receta <span class="hint" style="font-weight:400">(tartas, tortas, budines)</span><select id="fMoldF"><option value=""${!d.mold ? " selected" : ""}>— no usa molde —</option>${[["redondo","Redondo"],["cuadrado","Cuadrado"],["rect","Rectangular"]].map(([v, l]) => `<option value="${v}"${d.mold && d.mold.f === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
-        <label class="f">${d.mold && d.mold.f === "rect" ? "Ancho" : d.mold && d.mold.f === "cuadrado" ? "Lado" : "Diámetro"} (cm)<input id="fMoldX" type="number" min="0" step="0.5" value="${d.mold ? d.mold.x || "" : ""}"></label>
-        <label class="f">Largo (cm)<input id="fMoldY" type="number" min="0" step="0.5" value="${d.mold ? d.mold.y || "" : ""}" ${d.mold && d.mold.f === "rect" ? "" : "disabled"}></label></div>
-      <label class="f">Lleva también la receta de <span class="hint" style="font-weight:400">(ej.: la masa de una tarta; se suma a las compras ajustada al molde)</span><select id="fPart"><option value="">— nada más —</option>${state.recipes.filter(x => x.id !== d.id).sort((a, b) => (!!b.mold - !!a.mold) || a.name.localeCompare(b.name, "es")).map(x => `<option value="${x.id}"${(d.parts || [])[0] && d.parts[0].rid === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>
-      ${isSide(d) ? "" : `<div class="f"><span>Guarniciones que van bien <span class="hint" style="font-weight:400">(aparecen primero en el menú, y «Armame la semana» elige una)</span></span><div class="chips" style="margin-top:6px">${state.recipes.filter(isGuar).sort((a, b) => a.name.localeCompare(b.name, "es")).map(g => `<label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" class="fSide" value="${g.id}" style="width:auto"${(d.sides || []).includes(g.id) ? " checked" : ""}> ${esc(g.name)}</label>`).join("") || `<span class="hint">Todavía no hay recetas con categoría Guarnición.</span>`}</div></div>`}
-      <div class="hint">Categoría Guarnición, Salsa o Base: aparece en el desplegable de guarnición / salsa de cada comida. Cualquier otra: en el de platos.</div>
-      <label class="f">Nota para el menú<input id="fNote" value="${esc(d.note)}" placeholder="Ej.: dejar en remojo la noche anterior"></label>
       <div><h3 style="margin-bottom:4px">Ingredientes (para las ${serves(d)} porciones que rinde)</h3>
         <div class="hint" style="margin-bottom:6px">Un ingrediente por fila. Si lo vinculás a un producto, va a la lista de compras (y usa la unidad del producto). Sin cantidad = «a gusto».</div>
         <div class="rowsed"><div class="rowed head"><span>Cant.</span><span>Unidad</span><span>Ingrediente</span><span>Para comprar</span><span></span></div>
@@ -2632,6 +2713,20 @@ function renderModal(){
         <div class="hint" style="margin-top:8px">Así se lee:</div><div class="pre">${esc(d.rows.filter(x => x.name || x.p).map(x => "• " + rowText(x, 1)).join("\n")) || "—"}</div>
         ${d.ingOld ? `<details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Ver el texto de ingredientes como estaba antes del cambio</summary><div class="pre">${esc(d.ingOld)}</div><button class="btn small" id="dropOld" style="margin-top:6px">Ya lo revisé, no lo muestres más</button></details>` : ""}</div>
       <label class="f">Preparación<textarea id="fPrep" rows="8">${esc(d.prep)}</textarea></label>
+      <details class="moreopts"><summary><b>Más opciones</b> <span class="hint">nota, etiquetas, vianda, meal prep, freezer, molde, guarniciones…</span></summary><div class="moregrid">
+      <label class="f">Nota para el menú<input id="fNote" value="${esc(d.note)}" placeholder="Ej.: dejar en remojo la noche anterior"></label>
+      <div><h3 style="margin-bottom:6px">Etiquetas</h3><div class="tagpick">${state.tags.map(t => `<button class="chip tagchip" data-tagtoggle="${esc(t)}" aria-pressed="${(d.tags || []).includes(t)}">${esc(t)}</button>`).join("")}
+        <input id="fTagNew" placeholder="+ nueva etiqueta" style="max-width:170px"><button class="btn small" id="addTag">Agregar</button></div></div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="fFav" style="width:auto"${d.fav ? " checked" : ""}> ★ Favorita</label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600" title="Se hace en tanda para guardar (caldos, salsas, cubitos…)"><input type="checkbox" id="fMp" style="width:auto"${d.mp ? " checked" : ""}> 🥫 Meal prep</label>
+      ${isSide(d) ? "" : `<label style="display:flex;gap:8px;align-items:center;font-weight:600" title="Viaja bien y se recalienta: se puede cocinar de noche para el almuerzo del día siguiente"><input type="checkbox" id="fVianda" style="width:auto"${d.vianda !== false ? " checked" : ""}> 🍱 Va en vianda</label>`}
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="fSpec" style="width:auto"${d.special ? " checked" : ""}> Especial <span class="hint" style="font-weight:400">(se hace por fuera del menú semanal)</span></label></div>
+      <div class="grid3" style="grid-template-columns:1fr 1fr 1fr;align-items:end"><label class="f">Molde de la receta <span class="hint" style="font-weight:400">(tartas, tortas, budines)</span><select id="fMoldF"><option value=""${!d.mold ? " selected" : ""}>— no usa molde —</option>${[["redondo","Redondo"],["cuadrado","Cuadrado"],["rect","Rectangular"]].map(([v, l]) => `<option value="${v}"${d.mold && d.mold.f === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label class="f">${d.mold && d.mold.f === "rect" ? "Ancho" : d.mold && d.mold.f === "cuadrado" ? "Lado" : "Diámetro"} (cm)<input id="fMoldX" type="number" min="0" step="0.5" value="${d.mold ? d.mold.x || "" : ""}"></label>
+        <label class="f">Largo (cm)<input id="fMoldY" type="number" min="0" step="0.5" value="${d.mold ? d.mold.y || "" : ""}" ${d.mold && d.mold.f === "rect" ? "" : "disabled"}></label></div>
+      <label class="f">Lleva también la receta de <span class="hint" style="font-weight:400">(ej.: la masa de una tarta; se suma a las compras ajustada al molde)</span><select id="fPart"><option value="">— nada más —</option>${state.recipes.filter(x => x.id !== d.id).sort((a, b) => (!!b.mold - !!a.mold) || a.name.localeCompare(b.name, "es")).map(x => `<option value="${x.id}"${(d.parts || [])[0] && d.parts[0].rid === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>
+      ${isSide(d) ? "" : `<div class="f"><span>Guarniciones que van bien <span class="hint" style="font-weight:400">(aparecen primero en el menú, y «Armame la semana» elige una)</span></span><div class="chips" style="margin-top:6px">${state.recipes.filter(isGuar).sort((a, b) => a.name.localeCompare(b.name, "es")).map(g => `<label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" class="fSide" value="${g.id}" style="width:auto"${(d.sides || []).includes(g.id) ? " checked" : ""}> ${esc(g.name)}</label>`).join("") || `<span class="hint">Todavía no hay recetas con categoría Guarnición.</span>`}</div></div>`}
+      <div class="hint">Categoría Guarnición, Salsa o Base: aparece en el desplegable de guarnición / salsa de cada comida. Cualquier otra: en el de platos.</div>
       <details${d.before || d.serve || d.timeline || d.tips || serves(d) > 6 ? " open" : ""}><summary class="hint" style="cursor:pointer;font-weight:600">Secciones extra (para recetas especiales)</summary>
         <div class="grid2" style="margin-top:8px"><label class="f">Antes de empezar<textarea id="fBefore" rows="4">${esc(d.before || "")}</textarea></label>
         <label class="f">Para terminar y servir<textarea id="fServe" rows="4">${esc(d.serve || "")}</textarea></label>
@@ -2645,11 +2740,12 @@ function renderModal(){
         <label class="f wide">Cómo recalentar o cocinar<input id="fFzRe" value="${esc((d.fz && d.fz.re) || "")}" placeholder="Ej.: horno 180 °C, 20 min tapado"></label>
         <label class="f wide">Nota<input id="fFzNote" value="${esc((d.fz && d.fz.note) || "")}" placeholder="Ej.: congelar crudas, separadas con film"></label></div></details>
       <label class="f">Link (opcional)<input id="fLink" value="${esc(d.link)}"></label>
+      </div></details>
       ${d.id ? (modal.confirmDel
         ? `<div class="confirm"><span>¿Borrar «${esc(d.name)}»? ${recipeUseCount(d.id) || recipeEvents(d.id).length ? "También se quita del menú y de las comidas especiales." : ""}</span><button class="btn small danger" id="mDelYes">Sí, borrar</button><button class="btn small" id="mDelNo">No</button></div>`
         : `<div><button class="btn small danger" id="mDel">Borrar receta</button></div>`) : ""}`;
   }
-  root.innerHTML = `<div class="backdrop" id="backdrop"><div class="modal" role="dialog" aria-modal="true">${body}</div></div>`;
+  root.innerHTML = `<div class="backdrop${modal.edit ? "" : " rv"}" id="backdrop"><div class="modal${modal.edit ? "" : " rview"}" role="dialog" aria-modal="true" aria-label="${esc(d.name || "Receta")}">${body}</div></div>`;
 }
 function readDraft(){
   const d = modal.draft;
@@ -3677,13 +3773,19 @@ function toast(t){ $("#toastRoot").innerHTML = `<div class="toast" role="status"
 document.addEventListener("click", async e => {
   if (calcMenu && !e.target.closest(".calcmenu")) { calcMenu = false; render(); }
   if (e.target.closest("#bmLink")) { e.preventDefault(); toast("Arrastralo a la barra de favoritos (no se toca acá)"); return; }
+  if (modal && modal.more && (!e.target.closest(".rmore") || e.target.closest("[role=menuitem]"))) { modal.more = false; if (!e.target.closest("[role=menuitem]")) renderModal(); }
   if (openMenu && (!e.target.closest(".more") || e.target.closest("[role=menuitem]"))) { openMenu = null; if (!e.target.closest("[role=menuitem]")) render(); else setTimeout(() => { if (!openMenu) render(); }, 0); }
   const t = e.target.closest("button, [data-open]");
   if (cook) { if (t && cookClick(t)) return; if (t && t.closest(".cook")) return; }
   if (superMode) { if (t && superClick(t)) return; if (t && t.closest(".super")) return; }
   if (t && t.id === "superOpen") { openSuper(); return; }
   if (!t) { if (e.target.id === "calcBackdrop") closeCalc(); else if (e.target.id === "backdrop") closeModal(); else if (e.target.id === "sheetBack") closeSheet(); return; }
-  if (t.id === "weekMore" || t.id === "shopMore") { openMenu = openMenu === (t.id === "weekMore" ? "week" : "shop") ? null : (t.id === "weekMore" ? "week" : "shop"); return render(); }
+  if (t.id === "weekMore" || t.id === "shopMore" || t.id === "recMore") { const k = {weekMore: "week", shopMore: "shop", recMore: "rec"}[t.id]; openMenu = openMenu === k ? null : k; return render(); }
+  if (t.id === "recFilt") { recSheet = true; return renderSheet(); }
+  if (t.id === "sheetClose2") return closeSheet();
+  if (t.id === "recFiltClear") { recFilter.cat = "Todas"; recFilter.tag = ""; recFilter.quick = false; recFilter.long = false; return render(); }
+  if (modal && t.id === "mMore") { modal.more = !modal.more; return renderModal(); }
+  if (modal && t.dataset.sidepick) { modal.side = modal.side === t.dataset.sidepick ? null : t.dataset.sidepick; modal.checked = {}; return renderModal(); }
   if (t.dataset.meal) { const [i, f] = t.dataset.meal.split(":"); sheet = {i: +i, f}; renderSheet(); return; }
   if (t.id === "sheetClose") return closeSheet();
   if (t.id === "remAll") { remOpen = !remOpen; return render(); }
@@ -3803,7 +3905,7 @@ document.addEventListener("click", async e => {
   if (t.id === "mDelNo") { readDraft(); modal.confirmDel = false; return renderModal(); }
   if (t.id === "mDelYes") return deleteRecipe();
   if (t.id === "newRec") return openRecipe(null, true);
-  if (t.dataset.cat) { recFilter.cat = t.dataset.cat; return render(); }
+  if (t.dataset.cat) { recFilter.cat = recFilter.cat === t.dataset.cat && !QUICK_CATS.some(([k]) => k === t.dataset.cat) ? "Todas" : t.dataset.cat; return render(); }
   if (t.id === "toggleDone") { showDone = !showDone; return render(); }
   if (t.id === "uncheckAll") { state.checked = {}; save(); return render(); }
   if (t.id === "toggleWhere") { showWhere = !showWhere; return render(); }
