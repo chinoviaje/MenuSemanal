@@ -429,7 +429,7 @@ select,input,textarea{border-radius:10px}
 .slot.sv .sn{color:var(--accent)}
 .tgs{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
 .tg{font-size:.74rem;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
-.tv{background:var(--accent-soft);color:var(--accent)}.tf{background:var(--ice-soft);color:var(--ice)}.tw{background:var(--salsa);color:var(--salsa-fg)}
+.tv{background:var(--accent-soft);color:var(--accent)}.th{background:var(--gua);color:var(--gua-fg)}.tf{background:var(--ice-soft);color:var(--ice)}.tw{background:var(--salsa);color:var(--salsa-fg)}
 .wnote{font-size:.85rem;color:var(--muted);padding-left:86px}
 @media (min-width:1080px){
   .wk{grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;border:0}
@@ -694,6 +694,7 @@ function normalize(s){
   s.weekTpl = Object.assign({rules: DAYS.map(() => ["", ""]), vianda: DAYS.map(() => false)}, s.weekTpl || {});
   if (!Array.isArray(s.weekTpl.rules) || s.weekTpl.rules.length !== 7) s.weekTpl.rules = DAYS.map(() => ["", ""]);
   if (!Array.isArray(s.weekTpl.vianda) || s.weekTpl.vianda.length !== 7) s.weekTpl.vianda = DAYS.map(() => false);
+  s.nextMonVianda = !!s.nextMonVianda; if (!s.prevSun || typeof s.prevSun !== "object") s.prevSun = null;
   if (s.viandaPeople !== null && !(Number(s.viandaPeople) > 0)) s.viandaPeople = null; // lo que comieron: [{id, date:"AAAA-MM-DD", kind:"semana"|"especial", days?, preps?, rid?, people?}]
   if (!Array.isArray(s.events)) s.events = [];
   // v6: «Especiales» = recetas marcadas que se hacen por fuera del menú semanal
@@ -995,12 +996,14 @@ function fmtScaled(q, p, people, r){ // para mostrar en recetas (sin redondear p
 }
 /* vianda: el almuerzo sale de lo que sobra de la cena anterior (la cena se cocina para más) */
 const viandaN = () => Math.max(1, Math.round(Number(state.viandaPeople) || state.comensales));
-const feedsVianda = i => !!(state.days[(i + 1) % 7] || {}).vianda;
+const feedsVianda = i => i === 6 ? !!state.nextMonVianda : !!(state.days[i + 1] || {}).vianda;
+/* de dónde sale la vianda del almuerzo i: la cena del día anterior; el lunes, la del domingo de la semana pasada */
+const viandaSrc = i => i === 0 ? Object.assign({day: "Domingo", dinner: null, dinnerSalsa: null}, state.prevSun || {}) : state.days[i - 1];
 function slotsOf(days, preps, ppl, vn){
   const s = [];
-  days.forEach((d, i) => { const dn = d.day || DAYS[i], extra = (days[(i + 1) % 7] || {}).vianda ? vn : 0;
-    if (!d.vianda) s.push({rid: d.lunchFz ? null : d.lunch, label:dn + " almuerzo", people: ppl}, {rid:d.lunchSalsa, label:dn + " almuerzo (" + sideWord(recById(d.lunchSalsa)) + ")", people: ppl});
-    s.push({rid: d.dinnerFz ? null : d.dinner, label:dn + " cena" + (extra ? " (+ vianda)" : ""), people: ppl + extra}, {rid:d.dinnerSalsa, label:dn + " cena (" + sideWord(recById(d.dinnerSalsa)) + ")", people: ppl + extra});
+  days.forEach((d, i) => { const dn = d.day || DAYS[i], extra = (i === 6 ? (days === state.days ? state.nextMonVianda : days.nextMon) : (days[i + 1] || {}).vianda) ? vn : 0;
+    if (!d.vianda) s.push({rid: d.lunchFz || d.lunchHave ? null : d.lunch, label:dn + " almuerzo", people: ppl}, {rid:d.lunchSalsa, label:dn + " almuerzo (" + sideWord(recById(d.lunchSalsa)) + ")", people: ppl});
+    s.push({rid: d.dinnerFz || d.dinnerHave ? null : d.dinner, label:dn + " cena" + (extra ? " (+ vianda)" : ""), people: ppl + extra}, {rid:d.dinnerSalsa, label:dn + " cena (" + sideWord(recById(d.dinnerSalsa)) + ")", people: ppl + extra});
   });
   (preps || []).forEach(p => { const r = recById(p); s.push({rid:p, label:"Meal prep", people: isMP(r) ? serves(r) * ((state.prepTandas || {})[p] || 1) : ppl}); });
   return s.filter(x => x.rid && recById(x.rid));
@@ -1296,7 +1299,39 @@ function migrateUserRecipes(s){
     // lo que ya estaba en el freezer de estas recetas se cuenta en su unidad
     for (const x of (s.freezer || [])) { const r = s.recipes.find(y => y.id === x.rid); if (r && r.mp && !x.u) x.u = r.mp.u; }
   }
-  s.migUser = 13;
+  if (s.migUser < 14) {
+    const byName = n => (s.recipes.find(r => r.name === n) || {}).id;
+    const sides = (...ns) => ns.map(byName).filter(Boolean);
+    const add = r => { if (!s.recipes.some(x => x.name === r.name)) s.recipes.push({...base, id: rid(), serves: 3, vianda: true, ...r}); };
+    add({cat: "Carne", name: "Bifecitos a la plancha", tTotal: 15, tActive: 15, tNote: "",
+      rows: [{q: 600, u: "", name: "nalga en bifecitos", p: pid("Nalga en bifecitos", "Carnicería / granja / pescadería", "g", "g")},
+        {q: null, u: "", name: "Aceite, sal, orégano", p: null}],
+      prep: "1. Sacá los bifes de la heladera 15 minutos antes y secalos con papel.\n2. Calentá bien la plancha o sartén con un hilo de aceite.\n3. Cociná 2 a 3 minutos por lado, sin moverlos, según el grosor y el punto que les guste.\n4. Salá al final y espolvoreá orégano.",
+      tips: "• No los cocines todos juntos: si la sartén se llena, largan jugo y se hierven en vez de dorarse.\n• Mientras tanto, prepará la guarnición: lo que más tarda es eso.",
+      sides: sides("Puré de papas", "Papas rústicas al horno", "Ensalada mixta", "Puré mixto (papa y calabaza)", "Brócoli salteado con ajo"),
+      fz: {can: true, m: 3, thaw: "heladera", re: "Pasalos a la heladera la noche anterior y hacelos a la plancha como siempre.", note: "Congelalos crudos, separados con film o papel manteca."}});
+    add({cat: "Pollo", name: "Presas de pollo al horno", tTotal: 55, tActive: 10, tNote: "",
+      rows: [{q: 3, u: "", name: "pata-muslo de pollo (1 por persona)", p: pid("Pata-muslo de pollo", "Carnicería / granja / pescadería", "unidad", "unidades")},
+        {q: 1, u: "", name: "limón", p: pid("Limón", "Verdulería", "unidad", "unidades")},
+        {q: 2, u: "", name: "ajo (dientes)", p: pid("Ajo")},
+        {q: null, u: "", name: "Aceite, sal, pimentón u orégano", p: null}],
+      prep: "1. Prendé el horno a 200 °C.\n2. Condimentá las presas con el jugo de limón, el ajo picado, aceite, sal y pimentón.\n3. Ponelas en una fuente con la piel hacia arriba.\n4. Horneá 45 a 50 minutos, hasta que la piel esté dorada y al pincharlas salga jugo transparente.",
+      tips: "• Si la guarnición también va al horno (papas, verduritas, calabaza), metela en la misma fuente o en otra al mismo tiempo.\n• Podés dejarlas condimentadas en la heladera desde la mañana.",
+      sides: sides("Papas rústicas al horno", "Puré mixto (papa y calabaza)", "Verduritas al horno", "Calabaza y batata al horno", "Ensalada mixta"),
+      fz: {can: true, m: 3, thaw: "heladera", re: "Descongelá en la heladera la noche anterior y horneá como siempre.", note: "Congelalas crudas, ya condimentadas, en una bolsa."}});
+    add({cat: "Pescado", name: "Filet de pescado a la plancha", tTotal: 15, tActive: 15, tNote: "",
+      rows: [{q: 500, u: "", name: "filet de merluza (o abadejo, pollo de mar)", p: pid("Filet de merluza", "Carnicería / granja / pescadería", "g", "g")},
+        {q: 1, u: "", name: "limón", p: pid("Limón", "Verdulería", "unidad", "unidades")},
+        {q: null, u: "", name: "Aceite o manteca, sal, perejil", p: null}],
+      prep: "1. Secá bien los filets con papel y salalos.\n2. Calentá la sartén con un poco de aceite o manteca.\n3. Cociná 3 minutos del lado de la piel y 2 del otro, hasta que esté blanco y se separe en lascas.\n4. Serví con limón y perejil picado.",
+      tips: "• Si se rompe al darlo vuelta, pasalo antes por un poco de harina.\n• Va directo del freezer a la sartén: sumale un par de minutos por lado.",
+      sides: sides("Puré de papas", "Ensalada mixta", "Arroz pilaf", "Brócoli salteado con ajo", "Ensalada de lechuga y zanahoria"),
+      fz: {can: true, m: 3, thaw: "directo", re: "Cocinalo directo del freezer, a fuego medio, un par de minutos más por lado.", note: "Congelá los filets crudos, separados con film."}});
+    // el filet de merluza tenía la guarnición adentro; ahora se elige aparte
+    const fm = s.recipes.find(r => r.name === "Filet de merluza");
+    if (fm && Array.isArray(fm.rows)) { fm.rows = fm.rows.filter(x => !/^Puré o ensalada$/i.test(x.name) && !(x.name === "papa" && x.q === 600)); fm.prep = (fm.prep || "").replace(/\n3\. Servir con puré o ensalada\.?/, ""); }
+  }
+  s.migUser = 14;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
@@ -2145,17 +2180,21 @@ function renderSheet(){
   if (!sheet) { if (root.innerHTML) root.innerHTML = ""; return; }
   const {i, f} = sheet, d = state.days[i], L = f === "lunch" ? "almuerzo" : "cena", r = recById(d[f]), sd = recById(d[f + "Salsa"]), ppl = slotPeople(i, f);
   const prevI = (i + 6) % 7, nextI = (i + 1) % 7;
-  const sub = f === "dinner" && feedsVianda(i) ? `Se cocina para ${ppl}: ${state.comensales} + ${viandaN()} de vianda para el ${DAYS[nextI].toLowerCase()}` : `Para ${state.comensales} ${state.comensales === 1 ? "persona" : "personas"}`;
+  const sub = f === "dinner" && feedsVianda(i) ? `Se cocina para ${ppl}: ${state.comensales} + ${viandaN()} de vianda para el ${i === 6 ? "lunes que viene" : DAYS[nextI].toLowerCase()}` : `Para ${state.comensales} ${state.comensales === 1 ? "persona" : "personas"}`;
   let b = "";
-  if (f === "lunch") b += `<div class="frow"><div><b>🍱 Vianda</b><small>${d.vianda ? `Comen lo que sobra de la cena del ${DAYS[prevI].toLowerCase()}` : "Que este almuerzo salga de lo que sobra de la cena anterior"}</small></div><button class="sw" role="switch" aria-checked="${!!d.vianda}" data-vianda="${i}" aria-label="Vianda"></button></div>`;
+  if (f === "lunch") b += `<div class="frow"><div><b>🍱 Vianda</b><small>${d.vianda ? `Comen lo que sobra de la cena del ${i === 0 ? "domingo pasado" : DAYS[prevI].toLowerCase()}` : "Que este almuerzo salga de lo que sobra de la cena anterior"}</small></div><button class="sw" role="switch" aria-checked="${!!d.vianda}" data-vianda="${i}" aria-label="Vianda"></button></div>`;
   if (f === "lunch" && d.vianda) {
-    const pv = state.days[prevI], pr = recById(pv.dinner);
-    b += `<div class="frow"><div><small>Comen</small><b>${pr ? esc(mealName(pv, "dinner")) : `La cena del ${DAYS[prevI].toLowerCase()} todavía está vacía`}</b></div><button class="btn small" data-meal="${prevI}:dinner">${pr ? "Cambiar" : "Elegir"}</button></div>
+    const pv = viandaSrc(i), pr = recById(pv.dinner);
+    b += i === 0 ? `<label class="field"><span>Qué sobró del domingo pasado</span><select id="prevSunSel">${optionsFor("dish", pr ? pr.id : null)}</select></label>`
+      : `<div class="frow"><div><small>Comen</small><b>${pr ? esc(mealName(pv, "dinner")) : `La cena del ${DAYS[prevI].toLowerCase()} todavía está vacía`}</b></div><button class="btn small" data-meal="${prevI}:dinner">${pr ? "Cambiar" : "Elegir"}</button></div>`;
+    b += `
       <div class="frow"><div><b>Porciones de vianda</b><small>${state.viandaPeople ? `<button class="linkbtn" id="vnReset">Volver a igual que comensales</button>` : "Igual que comensales"}</small></div><div class="stp"><button class="iconbtn" id="vnMinus" aria-label="Una porción menos">−</button><b>${viandaN()}</b><button class="iconbtn" id="vnPlus" aria-label="Una porción más">+</button></div></div>`;
   } else {
     b += `<label class="field"><span>Plato</span><select id="sel-${i}-${f}" data-day="${i}" data-field="${f}">${optionsFor("dish", r ? r.id : null)}</select></label>
       <label class="field"><span>${r && pastaish(r) ? "Salsa" : "Guarnición o salsa"}</span><select id="sel-${i}-${f}Salsa" data-day="${i}" data-field="${f}Salsa">${sideOptions(r, sd ? sd.id : null)}</select></label>`;
-    if (r) { const have = fzOf(r.id), on = !!d[f + "Fz"];
+    if (i === 6 && f === "dinner") b += `<div class="frow"><div><b>🍱 Vianda del lunes que viene</b><small>${state.nextMonVianda ? `Se cocina para ${state.comensales + viandaN()} y sobra para el almuerzo del lunes. Cuando empieces la semana nueva, el lunes ya aparece con esta vianda.` : "Cociná de más hoy para que el lunes coman las sobras"}</small></div><button class="sw" role="switch" aria-checked="${!!state.nextMonVianda}" id="nextMonSw" aria-label="Vianda del lunes que viene"></button></div>`;
+    if (r) b += `<div class="frow"><div><b>✓ Ya lo tengo</b><small>Comprado hecho o me lo trajeron (ej.: ñoquis de la fábrica de pastas). No se suma a la lista de compras${sd ? "; la " + sideWord(sd) + " sí" : ""}.</small></div><button class="sw" role="switch" aria-checked="${!!d[f + "Have"]}" data-have="${i}:${f}" aria-label="Ya lo tengo"></button></div>`;
+    if (r && !d[f + "Have"]) { const have = fzOf(r.id), on = !!d[f + "Fz"];
       if (have || on) b += `<div class="frow"><div><b>🧊 Usar del freezer</b><small>${have ? `Hay ${have} ${have === 1 ? "porción congelada" : "porciones congeladas"}${have < ppl ? ` · se necesitan ${ppl}` : ""}` : "Ya no queda en el freezer"}. Si lo usás, no se compra.</small></div><button class="sw" role="switch" aria-checked="${on}" data-fz="${i}:${f}" aria-label="Usar del freezer"></button></div>`;
       if (f === "dinner" && feedsVianda(i) && r.vianda === false) b += `<p class="warnline">Esta receta no va en vianda. Cambiala, o marcala en Editar si te parece que sí.</p>`;
       if (r.note) b += `<p class="hintline">${esc(r.note)}</p>`;
@@ -2186,8 +2225,8 @@ function recSheetHTML(){
     <div class="sacts"><button class="btn" id="recFiltClear">Limpiar</button><button class="btn primary" id="sheetClose2" style="flex:1">Ver ${n} ${n === 1 ? "receta" : "recetas"}</button></div></div></div>`;
 }
 function viandaBox(i){
-  const j = (i + 6) % 7, pv = state.days[j], r = recById(pv.dinner), side = recById(pv.dinnerSalsa);
-  return `<div class="vbox"><div>🍱 <b>${r ? esc(mealName(pv, "dinner")) : "Vianda"}</b></div><div class="vsub">${r ? `Sobras de la cena del ${esc(pv.day.toLowerCase())}: esa noche se cocina para ${state.comensales + viandaN()}.` : `Sale de la cena del ${esc(pv.day.toLowerCase())}, que todavía está vacía.`}</div>${r ? `<button class="open" data-open="${r.id}"${side ? ` data-side="${side.id}"` : ""} data-people="${state.comensales + viandaN()}" data-vn="${viandaN()}">Ver</button>` : ""}</div>`;
+  const pv = viandaSrc(i), r = recById(pv.dinner), side = recById(pv.dinnerSalsa);
+  return `<div class="vbox"><div>🍱 <b>${r ? esc(mealName(pv, "dinner")) : "Vianda"}</b></div><div class="vsub">${r ? `${i === 0 ? "Sobras de la cena del domingo pasado." : `Sobras de la cena del ${esc(pv.day.toLowerCase())}: esa noche se cocina para ${state.comensales + viandaN()}.`}` : i === 0 ? "Sobras de la cena del domingo pasado." : `Sale de la cena del ${esc(pv.day.toLowerCase())}, que todavía está vacía.`}</div>${r ? `<button class="open" data-open="${r.id}"${side ? ` data-side="${side.id}"` : ""} data-people="${state.comensales + viandaN()}" data-vn="${viandaN()}">Ver</button>` : ""}</div>`;
 }
 const todayIdx = () => (new Date().getDay() + 6) % 7;
 function weekHead(){
@@ -2203,12 +2242,13 @@ function weekHead(){
 }
 function slotBtn(i, f){
   const d = state.days[i], L = f === "lunch" ? "Almuerzo" : "Cena";
-  if (f === "lunch" && d.vianda) { const pv = state.days[(i + 6) % 7], r = recById(pv.dinner);
-    return `<button class="slot sv" data-meal="${i}:${f}"><span class="sl">${L} · vianda</span><span class="sn">${r ? esc(mealName(pv, "dinner")) : "Sobras de la cena anterior"}</span></button>`; }
+  if (f === "lunch" && d.vianda) { const pv = viandaSrc(i), r = recById(pv.dinner);
+    return `<button class="slot sv" data-meal="${i}:${f}"><span class="sl">${L} · vianda</span><span class="sn">${r ? esc(mealName(pv, "dinner")) : i === 0 ? "Sobras del domingo pasado" : "Sobras de la cena anterior"}</span></button>`; }
   const r = recById(d[f]), sd = recById(d[f + "Salsa"]);
   if (!r) return `<button class="slot se" data-meal="${i}:${f}"><span class="sl">${L}</span><span class="sn">${sd ? esc(sd.name) : "Elegir…"}</span></button>`;
   const tags = [];
   if (f === "dinner" && feedsVianda(i)) tags.push(`<span class="tg tv" title="Se cocina para ${state.comensales + viandaN()}: sobra la vianda de mañana">🍱 +${viandaN()}</span>`);
+  if (d[f + "Have"]) tags.push(`<span class="tg th">✓ ya lo tengo</span>`);
   if (d[f + "Fz"]) tags.push(`<span class="tg tf">🧊 del freezer</span>`);
   if (f === "dinner" && feedsVianda(i) && r.vianda === false) tags.push(`<span class="tg tw">no va en vianda</span>`);
   return `<button class="slot" data-meal="${i}:${f}"><span class="sl">${L}</span><span class="sn">${esc(r.name)}${sd ? ` <span class="sg">+ ${esc(sd.name.charAt(0).toLowerCase() + sd.name.slice(1))}</span>` : ""}</span>${tags.length ? `<span class="tgs">${tags.join("")}</span>` : ""}</button>`;
@@ -2276,7 +2316,7 @@ function ruleOpts(sel){
   const cats = allCats().filter(c => !["Guarnición", "Salsa", "Base", "Otro"].includes(c) && state.recipes.some(r => r.cat === c && !r.special));
   return `<option value="">— libre —</option><option value="fav"${sel === "fav" ? " selected" : ""}>★ Una favorita</option><optgroup label="Categoría">${cats.map(c => `<option value="cat:${esc(c)}"${sel === "cat:" + c ? " selected" : ""}>${esc(c)}</option>`).join("")}</optgroup>${state.tags.length ? `<optgroup label="Etiqueta">${state.tags.map(t => `<option value="tag:${esc(t)}"${sel === "tag:" + t ? " selected" : ""}>${esc(t)}</option>`).join("")}</optgroup>` : ""}<optgroup label="Siempre la misma receta">${state.recipes.filter(r => !r.special && !isSide(r) && !isSubRecipe(r)).sort((a, b) => a.name.localeCompare(b.name, "es")).map(r => `<option value="rec:${r.id}"${sel === "rec:" + r.id ? " selected" : ""}>${esc(r.name)}</option>`).join("")}</optgroup>`;
 }
-function applyTpl(){ state.days.forEach((d, i) => { d.vianda = !!state.weekTpl.vianda[i]; }); }
+function applyTpl(){ state.days.forEach((d, i) => { d.vianda = !!state.weekTpl.vianda[i]; }); state.nextMonVianda = !!state.weekTpl.vianda[0]; }
 function tplSummary(){
   const T = state.weekTpl, parts = DAYS.map((dn, i) => { const a = T.vianda[i] ? "🍱" : ruleName(T.rules[i][0]), c = ruleName(T.rules[i][1]); return a || c ? `<b>${dn.slice(0, 3)}</b> ${esc([a, c].filter(Boolean).join(" · "))}` : ""; }).filter(Boolean);
   return parts.length ? parts.join(" &nbsp; ") : "todavía sin reglas";
@@ -2337,7 +2377,7 @@ function pickSide(r){
 const autoSide = (i, f, r) => wantsSalsa(r) ? pickSalsa(i, f) : pickSide(r);
 function fillSlots(slots, o){
   const lm = lastMade(); let n = 0;
-  for (const [i, f] of slots) { state.days[i][f] = null; state.days[i][f + "Salsa"] = null; state.days[i][f + "Fz"] = false; }
+  for (const [i, f] of slots) { state.days[i][f] = null; state.days[i][f + "Salsa"] = null; state.days[i][f + "Fz"] = false; state.days[i][f + "Have"] = false; }
   for (const [i, f] of slots) {
     const r = suggestFor(i, f, o, lm); if (!r) continue;
     state.days[i][f] = r.id; n++;
@@ -2386,10 +2426,15 @@ function agoText(n){
   const mo = Math.floor(n / 30); return mo < 12 ? "hace " + mo + (mo === 1 ? " mes" : " meses") : "hace más de un año";
 }
 function weekIsEmpty(){ return !state.days.some(d => d.lunch || d.dinner || d.lunchSalsa || d.dinnerSalsa) && !state.preps.some(Boolean); }
-function snapshotWeek(){ return {days: state.days.map(d => ({lunch: d.vianda ? null : d.lunch, lunchSalsa: d.vianda ? null : d.lunchSalsa, dinner:d.dinner, dinnerSalsa:d.dinnerSalsa, notes:d.notes, vianda: !!d.vianda, lunchFz: !d.vianda && !!d.lunchFz, dinnerFz: !!d.dinnerFz})), preps: [...state.preps]}; }
+function snapshotWeek(){ return {days: state.days.map(d => ({lunch: d.vianda ? null : d.lunch, lunchSalsa: d.vianda ? null : d.lunchSalsa, dinner:d.dinner, dinnerSalsa:d.dinnerSalsa, notes:d.notes, vianda: !!d.vianda, lunchFz: !d.vianda && !!d.lunchFz, dinnerFz: !!d.dinnerFz, lunchHave: !d.vianda && !!d.lunchHave, dinnerHave: !!d.dinnerHave})), preps: [...state.preps]}; }
 function applySaved(m){
   const ok = id => id && recById(id) ? id : null;
+  const sun = state.days[6] || {}, roll = state.nextMonVianda && recById(sun.dinner);
+  if (roll) state.prevSun = {dinner: sun.dinner, dinnerSalsa: ok(sun.dinnerSalsa)};
+  state.nextMonVianda = false;
   state.days = DAYS.map((day, k) => { const d = m.days[k] || {}; return {day, lunch:ok(d.lunch), lunchSalsa:ok(d.lunchSalsa), dinner:ok(d.dinner), dinnerSalsa:ok(d.dinnerSalsa), notes:d.notes || "", vianda: d.vianda !== undefined ? !!d.vianda : !!(state.days[k] || {}).vianda}; });
+  if (roll) state.days[0].vianda = true;
+  if (m.nextMon !== undefined) state.nextMonVianda = !!m.nextMon;
   state.preps = (m.preps || []).map(ok).filter(Boolean); state.prepDone = {};
   state.checked = {};
 }
@@ -3677,9 +3722,9 @@ function planDocHTML(){
   const ids = weekRecipeIds(), withRec = new Set(ids);
   const R = id => withRec.has(id) ? ` <span class="rb" title="Tiene receta más adelante">R</span>` : "";
   const meal = (i, f) => { const d = state.days[i];
-    if (f === "lunch" && d.vianda) { const pv = state.days[(i + 6) % 7], r = recById(pv.dinner); return r ? `<span class="vi">Vianda:</span> ${esc(mealName(pv, "dinner"))}` : `<span class="vi">Vianda</span>`; }
+    if (f === "lunch" && d.vianda) { const pv = viandaSrc(i), r = recById(pv.dinner); return r ? `<span class="vi">Vianda:</span> ${esc(mealName(pv, "dinner"))}${i === 0 ? " <span class=\"mu\">(del domingo)</span>" : ""}` : `<span class="vi">Vianda</span>`; }
     const r = recById(d[f]), sd = recById(d[f + "Salsa"]); if (!r && !sd) return `<span class="mu">—</span>`;
-    const tags = [f === "dinner" && feedsVianda(i) ? `🍱 se cocina para ${slotPeople(i, f)}` : "", d[f + "Fz"] ? "🧊 del freezer" : ""].filter(Boolean);
+    const tags = [f === "dinner" && feedsVianda(i) ? `🍱 se cocina para ${slotPeople(i, f)}` : "", d[f + "Fz"] ? "🧊 del freezer" : "", d[f + "Have"] ? "✓ ya lo tenés" : ""].filter(Boolean);
     return `${r ? esc(r.name) + R(r.id) : ""}${sd ? `${r ? " con " : ""}${esc(r ? sd.name.charAt(0).toLowerCase() + sd.name.slice(1) : sd.name)}${R(sd.id)}` : ""}${tags.length ? `<div class="tg">${tags.join(" · ")}</div>` : ""}${d.notes && f === "dinner" ? `<div class="nt">✎ ${esc(d.notes)}</div>` : ""}`; };
   const rem = weekReminders().flatMap((l, i) => l.map(x => `<li><b>${DAYS[i]}:</b> ${esc(x.text)}</li>`));
   const preps = state.preps.map(recById).filter(Boolean);
@@ -4041,6 +4086,7 @@ document.addEventListener("click", async e => {
   if (t.dataset.plan) { state.planner[t.dataset.plan] = t.dataset.val; save(); return render(); }
   if (t.id === "planFav" || t.id === "planRecent" || t.id === "planQuick") { const k = {planFav:"fav", planRecent:"recent", planQuick:"quick"}[t.id]; state.planner[k] = !state.planner[k]; save(); return render(); }
   if (t.dataset.plantag) { const o = state.planner, x = t.dataset.plantag; o.tags = o.tags.includes(x) ? o.tags.filter(y => y !== x) : [...o.tags, x]; save(); return render(); }
+  if (t.dataset.have) { const [i, f] = t.dataset.have.split(":"); const d = state.days[+i]; d[f + "Have"] = !d[f + "Have"]; if (d[f + "Have"]) d[f + "Fz"] = false; save(); render(); toast(d[f + "Have"] ? "Listo: no se suma a la lista de compras" : "Vuelve a la lista de compras"); return; }
   if (t.dataset.fz) { const [i, f] = t.dataset.fz.split(":"); const d = state.days[+i]; d[f + "Fz"] = !d[f + "Fz"]; save(); render(); toast(d[f + "Fz"] ? "Sale del freezer: no se compra" : "Se cocina: vuelve a la lista de compras"); return; }
   if (t.dataset.mptan) { const [id, k] = t.dataset.mptan.split(":"); state.prepTandas[id] = Math.max(1, Math.min(20, (state.prepTandas[id] || 1) + Number(k))); save(); return render(); }
   if (t.dataset.mpdone) { const id = t.dataset.mpdone, r = recById(id), tt = state.prepTandas[id] || 1; fzAddUnits(id, mpQ(r) * tt, r.mp.u); state.prepDone[id] = true; save(); render(); toast(`🥫 Al stock: ${mpYield(r, tt)} de ${r.name.toLowerCase()}`); return; }
@@ -4059,6 +4105,7 @@ document.addEventListener("click", async e => {
   if (t.id === "tplEdit" || t.id === "tplDone") { tplOpen = t.id === "tplEdit" ? !tplOpen : false; if (t.id === "tplDone") { state.planner.useTpl = true; save(); } return render(); }
   if (t.id === "tplWeekdays") { state.weekTpl.vianda = DAYS.map((_, i) => i < 5); state.planner.useTpl = true; save(); toast("Lunes a viernes: el almuerzo sale de la cena anterior"); return render(); }
   if (t.id === "tplClear") { state.weekTpl = {rules: DAYS.map(() => ["", ""]), vianda: DAYS.map(() => false)}; save(); return render(); }
+  if (t.id === "nextMonSw") { state.nextMonVianda = !state.nextMonVianda; save(); render(); toast(state.nextMonVianda ? `Domingo: se cocina para ${state.comensales + viandaN()}, sobra para el lunes` : "Domingo: sin vianda para el lunes"); return; }
   if (t.dataset.vianda !== undefined) { const d = state.days[+t.dataset.vianda]; d.vianda = !d.vianda; save(); render(); toast(d.vianda ? `${d.day}: el almuerzo sale de la cena del ${DAYS[(+t.dataset.vianda + 6) % 7].toLowerCase()}` : `${d.day}: almuerzo aparte`); return; }
   if (t.id === "vnMinus" || t.id === "vnPlus") { state.viandaPeople = Math.max(1, Math.min(30, viandaN() + (t.id === "vnPlus" ? 1 : -1))); save(); return render(); }
   if (t.id === "vnReset") { state.viandaPeople = null; save(); return render(); }
@@ -4168,6 +4215,7 @@ document.addEventListener("click", async e => {
   if (t.id === "impNo") { pendingImport = null; closeModal(); return; }
 });
 document.addEventListener("change", e => {
+  if (e.target.id === "prevSunSel") { state.prevSun = e.target.value ? {dinner: e.target.value, dinnerSalsa: null} : null; save(); render(); return; }
   const t = e.target;
   if (t.dataset.gp && curCalcId()) { const id = curCalcId(), d = (CALC_PARAMS[id].find(x => x[0] === t.dataset.gp) || [])[2], v = Number(String(t.value).replace(",", "."));
     state.calcRules = {...(state.calcRules || {})}; const own = {...(state.calcRules[id] || {})};
@@ -4188,7 +4236,7 @@ document.addEventListener("change", e => {
   if (t.dataset.tplrule) { const [i, k] = t.dataset.tplrule.split(":").map(Number); state.weekTpl.rules[i][k] = t.value; save(); return render(); }
   if (t.dataset.tplv !== undefined) { state.weekTpl.vianda[+t.dataset.tplv] = t.checked; save(); return render(); }
   if (t.id === "mSide" && modal) { modal.side = t.value || null; modal.checked = {}; return renderModal(); }
-  if (t.dataset.day !== undefined) { const d = state.days[+t.dataset.day], f = t.dataset.field; d[f] = t.value || null; if (f === "lunch" || f === "dinner") d[f + "Fz"] = false; save(); render(); return; }
+  if (t.dataset.day !== undefined) { const d = state.days[+t.dataset.day], f = t.dataset.field; d[f] = t.value || null; if (f === "lunch" || f === "dinner") { d[f + "Fz"] = false; d[f + "Have"] = false; } save(); render(); return; }
   if (t.id === "prepAdd") { if (t.value && !state.preps.includes(t.value)) { state.preps.push(t.value); save(); toast("Agregado: " + recById(t.value).name); } render(); return; }
   if (t.dataset.check !== undefined) {
     const sc = t.dataset.scope || "week";
