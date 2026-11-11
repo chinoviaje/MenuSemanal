@@ -1766,7 +1766,9 @@ function migrateSnacks(s){
   s.fijos = [];
 }
 function snackTotal(x){ const q = Number(x.q) || 0; return x.per === "casa" ? q : x.per === "semana" ? q * state.comensales : q * state.comensales * (Number(x.days) || 7); }
+const SNACKS_ON = false; // desayunos, meriendas y colaciones: apagado (los datos se conservan)
 function snackEntries(){
+  if (!SNACKS_ON) return [];
   return MEALS.map(([m, label]) => ({r: {id: "__" + m, name: label, serves: 1, rows: state.snacks.filter(x => x.meal === m && x.p && prodById(x.p)).map(x => ({q: snackTotal(x), p: x.p}))}, people: 1, label: label.replace(/^\S+\s/, "")})).filter(e => e.r.rows.length);
 }
 let menuView = "comidas", snackNew = null;
@@ -2115,6 +2117,7 @@ function pick(i, field, kind){
 }
 function viewMenu(){
   const segW = `<div class="seg" role="tablist"><button role="tab" data-menuview="comidas" aria-selected="${menuView !== "snacks"}">Almuerzos y cenas</button><button role="tab" data-menuview="snacks" aria-selected="${menuView === "snacks"}">Desayunos y meriendas${state.snacks.length ? ` <span class="segn">${state.snacks.length}</span>` : ""}</button></div>`;
+  if (!SNACKS_ON) return viewMenuMeals("");
   if (menuView === "snacks") return weekHead() + segW + viewSnacks();
   return viewMenuMeals(segW);
   const sub = `<div class="subtabs" role="tablist"><button role="tab" data-menuview="comidas" aria-selected="${menuView === "comidas"}">🍽 Almuerzos y cenas</button><button role="tab" data-menuview="snacks" aria-selected="${menuView === "snacks"}">☕ Desayunos, meriendas y colaciones${state.snacks.length ? ` <span class="tabn" style="background:var(--accent)">${state.snacks.length}</span>` : ""}</button><button role="tab" data-menuview="mp" aria-selected="${menuView === "mp"}">🥫 Meal prep y freezer${state.recipes.some(r => isMP(r) && mpAlert(r)) ? ` <span class="tabn" style="background:var(--warn)">${state.recipes.filter(r => isMP(r) && mpAlert(r)).length}</span>` : ""}</button><button role="tab" data-menuview="stats" aria-selected="${menuView === "stats"}">📊 Lo que comemos</button></div>`;
@@ -2468,7 +2471,7 @@ function viewCompras(){
   const slots = menuSlots().filter(x => recById(x.rid));
   const nDish = slots.filter(x => !isSide(recById(x.rid))).length, nSal = slots.length - nDish;
   const spW = specials().filter(r => spOf(r).addToWeek);
-  const nSn = state.snacks.filter(x => x.p && prodById(x.p) && Number(x.q) > 0).length;
+  const nSn = !SNACKS_ON ? 0 : state.snacks.filter(x => x.p && prodById(x.p) && Number(x.q) > 0).length;
   if (!slots.length && !spW.length && !state.extra.length && !nSn) return `<div class="toolbar"><h2>Lista de compras de la semana</h2></div>
     <section class="emptybox"><div class="big">🛒</div><h3>Tu lista se arma sola con el menú de la semana</h3>
       <p class="hint">Todavía no elegiste ninguna comida. Elegí los platos en <b>Menú</b> (o pedile a la app que te arme la semana) y acá vas a ver todo lo que hay que comprar, agrupado por comercio y con las cantidades para ${state.comensales} personas.</p>
@@ -3732,7 +3735,7 @@ function planDocHTML(){
   const boxes = [rem.length ? `<div class="box amber wide"><h4>No te olvides</h4><ul class="cols">${rem.join("")}</ul></div>` : "",
     preps.length ? `<div class="box blue"><h4>Meal prep de la semana</h4><ul>${preps.map(r => `<li>${esc(r.name)}${isMP(r) ? ` · ${(state.prepTandas[r.id] || 1)} ${(state.prepTandas[r.id] || 1) === 1 ? "tanda" : "tandas"} (rinde ${esc(mpYield(r, state.prepTandas[r.id] || 1))})` : ""}</li>`).join("")}</ul></div>` : "",
     fzUse.length ? `<div class="box teal"><h4>Sale del freezer</h4><ul>${fzUse.join("")}</ul></div>` : ""].filter(Boolean);
-  const snacks = MEALS.map(([m, label]) => { const xs = state.snacks.filter(x => x.meal === m && prodById(x.p)); return xs.length ? `<b>${esc(label.replace(/^\S+\s/, ""))}:</b> ${xs.map(x => `${esc(prodById(x.p).name.toLowerCase())} (${esc(fmtQty(snackTotal(x), prodById(x.p)))})`).join(", ")}` : ""; }).filter(Boolean);
+  const snacks = !SNACKS_ON ? [] : MEALS.map(([m, label]) => { const xs = state.snacks.filter(x => x.meal === m && prodById(x.p)); return xs.length ? `<b>${esc(label.replace(/^\S+\s/, ""))}:</b> ${xs.map(x => `${esc(prodById(x.p).name.toLowerCase())} (${esc(fmtQty(snackTotal(x), prodById(x.p)))})`).join(", ")}` : ""; }).filter(Boolean);
   const g = shopping(), shops = SHOPS.map(sh => [sh, (g[sh] || []).filter(x => !state.checked[x.p.id])]).filter(x => x[1].length);
   const fijos = state.fijos.filter(f => !state.checked["fijo:" + f.name]);
   const cs = costSummary(g);
