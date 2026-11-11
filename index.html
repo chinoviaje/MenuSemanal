@@ -1538,7 +1538,7 @@ function renderAsado(){
       <div><span class="hint">Prender el fuego</span><b>${r.prender} min antes</b><span class="hint">de sentarse a comer</span></div></div>
     <div class="asolist">${list}</div>
     <div class="btnrow"><button class="btn primary" id="asoSave">🎉 Guardar como especial</button><button class="btn" id="asoCopy">Copiar para WhatsApp</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(asadoText(r, a))}">Abrir WhatsApp</a></div>
-    <p class="hint" style="margin:0">«Guardar como especial» crea «Asado para ${r.people}» en Especiales: ahí tenés la lista de compras por comercio, el PDF y el pedido a Jumbo. La carne pierde 25-35 % en la parrilla: estas cantidades ya lo tienen en cuenta.</p>${calcExtras("asado")}</div></div>`);
+    <p class="hint" style="margin:0">«Guardar como especial» crea «Asado para ${r.people}» en Especiales: ahí tenés la lista de compras por comercio, y el PDF. La carne pierde 25-35 % en la parrilla: estas cantidades ya lo tienen en cuenta.</p>${calcExtras("asado")}</div></div>`);
 }
 function asadoToSpecial(){
   const a = asado, r = asadoCalc(a);
@@ -1908,7 +1908,9 @@ function jInfo(p){ // cómo se traduce lo que vende Jumbo a la unidad de la rece
   if ((p.unit === "g" || p.unit === "ml") && !isFresh(p) && Number(p.packSize) > 0) return {content: Number(p.packSize), per: j.p / Number(p.packSize)};
   return null;
 }
+const JUMBO_ON = false; // todo lo de Jumbo (precios, pedido, búsqueda): apagado; los datos guardados se conservan
 function buyCost(need, p){
+  if (!JUMBO_ON) return null;
   const ji = jInfo(p); if (!ji || !(need > 0)) return null;
   if (ji.granel) return {cost: need * ji.per, packs: null};
   const k = Math.max(1, Math.ceil(need / ji.content - 1e-6));
@@ -2468,10 +2470,10 @@ function shopListHTML(g, checked, scope){
       const meta = [packDesc(x.p) ? esc(packDesc(x.p)) : "", x.packed ? "necesitás " + esc(x.need) : "", hv, sub].filter(Boolean).join(" · ");
       return `<label class="item${done ? " done" : ""}"><input type="checkbox" data-check="${x.p.id}" data-scope="${scope}"${done ? " checked" : ""}>
         <span class="ibody"><span class="n">${esc(x.p.name)}</span>${meta ? `<span class="u">${meta}</span>` : ""}
-        ${im ? `<span class="iacts"><button class="btn small" data-haveopen="${x.p.id}">Tengo en casa…</button><a class="btn small" href="${esc(jumboUrl(x.p))}" target="_blank" rel="noopener">Buscar en Jumbo ↗</a>${!showWhere && x.where && x.where.length ? `<span class="u">Va en: ${esc(x.where.join(", "))}</span>` : ""}</span>` : ""}
+        ${im ? `<span class="iacts"><button class="btn small" data-haveopen="${x.p.id}">Tengo en casa…</button>${!showWhere && x.where && x.where.length ? `<span class="u">Va en: ${esc(x.where.join(", "))}</span>` : ""}</span>` : ""}
         ${editing ? `<span class="haveed"><input id="haveIn" type="number" min="0" step="any" value="${x.have !== undefined && x.have !== "all" ? esc(x.have) : ""}" placeholder="cuánto tenés"> <span class="u">${esc(x.p.unit)}</span>
           <button class="btn small primary" data-havesave="${x.p.id}">Guardar</button><button class="btn small" data-haveall="${x.p.id}">Tengo todo</button><button class="btn small" data-haveno="${x.p.id}">Cancelar</button></span>` : ""}</span>
-        <span class="qcol"><span class="q">${esc(x.qty)}</span>${x.cost ? `<span class="price" title="${esc((x.p.jumbo.n || "") + (x.cost.packs ? " ×" + x.cost.packs : ""))}">${money(x.cost.cost)}</span>` : ""}</span>${scope === "week" ? `<button class="imore" data-itemmenu="${x.p.id}" aria-label="Opciones de ${esc(x.p.name)}" aria-expanded="${im}">⋯</button>` : `<a class="imore" href="${esc(jumboUrl(x.p))}" target="_blank" rel="noopener" title="Buscar en Jumbo" aria-label="Buscar ${esc(x.p.name)} en Jumbo">↗</a>`}</label>`;
+        <span class="qcol"><span class="q">${esc(x.qty)}</span>${x.cost ? `<span class="price" title="${esc((x.p.jumbo.n || "") + (x.cost.packs ? " ×" + x.cost.packs : ""))}">${money(x.cost.cost)}</span>` : ""}</span>${scope === "week" ? `<button class="imore" data-itemmenu="${x.p.id}" aria-label="Opciones de ${esc(x.p.name)}" aria-expanded="${im}">⋯</button>` : ""}</label>`;
     }).join("") + `</section>`;
   }
   return h;
@@ -2494,11 +2496,9 @@ function viewCompras(){
   const parts = [`${nDish} ${nDish === 1 ? "comida" : "comidas"}`, nSal ? `${nSal} ${nSal === 1 ? "salsa o preparación" : "salsas y preparaciones"}` : "", nSn ? `${nSn} ${nSn === 1 ? "cosa" : "cosas"} de desayunos y meriendas` : ""].filter(Boolean);
   const cs = costSummary(g);
   let h = `<div class="pagehead"><div><h2 class="ptitle">Compras</h2><div class="bigcount"><b>${pend}</b><span>por comprar${done ? ` · ${done} en el carrito` : ""}</span></div></div>
-    <div class="pacts">${pend ? `<button class="btn primary" id="superOpen" title="La lista en pantalla completa, con letra grande, para tachar en el súper">📱 Ir al súper</button><a class="btn" href="${esc(jumboCartUrl({g, title: "Compra de la semana", checked: state.checked}))}" target="_blank" rel="noopener" title="Abre Jumbo; ahí tocá ⭐ Traer precios para cargar el carrito">Pedir en Jumbo</a>` : ""}
+    <div class="pacts">${pend ? `<button class="btn primary" id="superOpen" title="La lista en pantalla completa, con letra grande, para tachar mientras comprás">🛒 Ir de compras</button>` : ""}
       <div class="more"><button class="iconbtn" id="shopMore" aria-label="Más opciones de compras" aria-expanded="${openMenu === "shop"}">⋯</button>${openMenu === "shop" ? `<div class="menu" role="menu">
-        <a role="menuitem" href="${esc(jumboListUrl())}" target="_blank" rel="noopener">Ver la lista en Jumbo</a>
         <button role="menuitem" id="planPdf">📄 Plan de la semana en PDF</button>
-        <button role="menuitem" id="pricesGo">Precios de Jumbo</button>
         <button role="menuitem" id="copyWa">Copiar para WhatsApp</button>
         <a role="menuitem" href="https://wa.me/?text=${encodeURIComponent(whatsappText(false))}" target="_blank" rel="noopener">Mandar por WhatsApp</a>
         <button role="menuitem" id="toggleWhere">${showWhere ? "No mostrar en qué platos va" : "Mostrar en qué platos va cada cosa"}</button>
@@ -2543,7 +2543,7 @@ function viewEspeciales(){
     <div class="frow" style="margin:12px 0"><div><b>Sumar a la compra de la semana</b><small>Sus ingredientes van a la lista de Compras</small></div><button class="sw" role="switch" aria-checked="${!!sp.addToWeek}" id="spWeekSw" aria-label="Sumar a la compra de la semana"></button></div>
     <div class="sptitle"><h3 class="rsec" style="margin:0">Compras <span class="hint" style="font-family:var(--body);font-weight:500">· ${pend} por comprar${cs.n ? " · aprox. " + money(cs.tot) : ""}</span></h3>${all.some(x => sp.checked[x.p.id]) ? `<button class="linkbtn" id="spUncheck">Desmarcar todo</button>` : ""}</div>
     <div class="shopgrid">${shopListHTML(g, sp.checked, "sp:" + r.id) || `<p class="hint">Ningún ingrediente está vinculado a un producto.</p>`}</div>
-    ${jumboBox("spPrice", {g, title: r.name + " para " + sp.people, checked: sp.checked})}`;
+`;
 }
 function toggleSpecial(id){
   const r = recById(id); if (!r) return;
@@ -2655,13 +2655,13 @@ function prodSubtabsOLD(){ const ns = Object.keys(state.stock).filter(id => prod
   return `<div class="subtabs" role="tablist"><button role="tab" data-prodview="todos" aria-selected="${prodView === "todos"}">📦 Todos los productos</button><button role="tab" data-prodview="encasa" aria-selected="${prodView === "encasa"}">🏠 En casa${ns ? ` <span class="tabn" style="background:var(--accent)">${ns}</span>` : ""}</button></div>`; }
 let prodMode = "casa";
 function viewProductos(){
-  if (prodMode !== "tabla") return `<div>` + viewEnCasa() + `</div><div class="dmore"><button class="btn" id="prodTable">Editar productos: marcas, presentación y Jumbo</button></div>`;
+  if (prodMode !== "tabla") return `<div>` + viewEnCasa() + `</div><div class="dmore"><button class="btn" id="prodTable">Editar productos: marcas y presentación</button></div>`;
   return `<div class="toolbar" style="margin-top:0"><button class="btn small" id="prodBack">← Volver a lo que hay en casa</button></div>` + viewProductosAll().replace("<!--SUB-->", `<div class="chips" style="margin:0 0 10px"><input id="prodQ" type="search" placeholder="Buscar producto" value="${esc(prodQ)}" style="max-width:260px"></div>`);
 }
 function viewProductosAll(){
   const usage = {};
   state.recipes.forEach(r => itemsOf(r).forEach(it => (usage[it.p] = usage[it.p] || []).push(r.name)));
-  let h = `<div class="toolbar"><h2>Productos</h2><span class="hint">Los que se pueden elegir como ingredientes. g y ml se suman y pasan a kg / l.</span><button class="btn" id="priceOpen">💲 Precios de Jumbo</button><button class="btn primary" id="newProd">Agregar producto</button></div><!--SUB-->${priceOpen ? pricePanel() : ""}<div class="ptable"><table><thead><tr><th>Producto</th><th title="Lo que ya tenés: se descuenta de la lista de compras">🏠 En casa</th><th>Marca</th><th title="Cómo viene: pote, paquete, botella… y cuánto trae">Presentación</th><th>Comercio</th><th>Unidad</th><th>Plural</th><th>Jumbo</th><th>Recetas</th><th></th></tr></thead><tbody>`;
+  let h = `<div class="toolbar"><h2>Productos</h2><span class="hint">Los que se pueden elegir como ingredientes. g y ml se suman y pasan a kg / l.</span><button class="btn primary" id="newProd">Agregar producto</button></div><!--SUB-->${priceOpen ? pricePanel() : ""}<div class="ptable"><table><thead><tr><th>Producto</th><th title="Lo que ya tenés: se descuenta de la lista de compras">🏠 En casa</th><th>Marca</th><th title="Cómo viene: pote, paquete, botella… y cuánto trae">Presentación</th><th>Comercio</th><th>Unidad</th><th>Plural</th><th>Recetas</th><th></th></tr></thead><tbody>`;
   const need = weekNeeds(), q = prodQ.trim().toLowerCase();
   const sorted = [...state.products].filter(p => (prodView !== "encasa" || state.stock[p.id] !== undefined) && (!q || (p.name + " " + (p.brand || "")).toLowerCase().includes(q))).sort((a,b) => (SHOPS.indexOf(a.shop) - SHOPS.indexOf(b.shop)) || a.name.localeCompare(b.name,"es"));
   if (!sorted.length) h += `<tr><td colspan="10" class="hint" style="padding:14px">${prodView === "encasa" ? "Todavía no anotaste nada que tengas en casa. En «Todos», escribí cuánto tenés en la columna 🏠 En casa." : "No hay productos con ese nombre."}</td></tr>`;
@@ -2677,7 +2677,6 @@ function viewProductosAll(){
       <td><select id="ps-${p.id}" data-pf="shop" data-pid="${p.id}">${SHOPS.map(s => `<option${s === p.shop ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></td>
       <td><select id="pu-${p.id}" data-pf="unit" data-pid="${p.id}">${UNITS.concat(UNITS.includes(p.unit) ? [] : [p.unit]).map(s => `<option${s === p.unit ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></td>
       <td><input id="pp-${p.id}" data-pf="plural" data-pid="${p.id}" value="${esc(p.plural)}" style="max-width:120px"></td>
-      <td class="jcell">${p.jumbo && p.jumbo.p > 0 ? `<b>${money(p.jumbo.p)}${p.jumbo.g ? "/kg" : ""}</b>${p.jumbo.prev ? ` <span class="${p.jumbo.p > p.jumbo.prev ? "up" : "down"}">${p.jumbo.p > p.jumbo.prev ? "▲" : "▼"} ${Math.abs(Math.round((p.jumbo.p / p.jumbo.prev - 1) * 100))}%</span>` : ""}<br><a href="https://www.jumbo.com.ar/${esc(p.jumbo.l || "")}/p" target="_blank" rel="noopener" class="hint">${esc(p.jumbo.n || "")}</a>${!jInfo(p) ? `<br><span class="hint">no sé cuánto trae: cargá la presentación</span>` : ""} <button class="linkbtn" data-junlink="${p.id}" title="Olvidar este producto de Jumbo">✕</button>` : p.jumbo && p.jumbo.none ? `<span class="hint">No lo comprás en Jumbo</span> <button class="linkbtn" data-junlink="${p.id}" title="Volver a buscarlo">↺</button>` : `<span class="hint">—</span>`}</td>
       <td class="uses" title="${esc(u.join(", "))}">${u.length}</td>
       <td>${u.length ? "" : `<button class="btn small danger" data-delprod="${p.id}">Borrar</button>`}</td></tr>`;
   }
@@ -2928,7 +2927,7 @@ function buildWorkbook(){
     else { (x.days || []).forEach((d, k) => { if (d.lunch || d.dinner || d.lunchSalsa || d.dinnerSalsa) hv.push([x.date, DAYS[k], nm(d.lunch), nm(d.lunchSalsa), nm(d.dinner), nm(d.dinnerSalsa), ""]); });
       (x.preps || []).filter(Boolean).forEach(p => hv.push([x.date, "Para tener listo", "", nm(p), "", "", ""])); } });
   add("Historial", hv, [22,14,32,22,32,22,14]);
-  add("Productos", [["Producto (nombre único)","Comercio","Unidad","Unidad en plural","En casa","Marca","Envase","Cuánto trae el envase","Jumbo: producto","Jumbo: precio","Jumbo: fecha","Jumbo: código","Jumbo: trae"], ...state.products.map(p => [p.name, p.shop, p.unit, p.plural, state.stock[p.id] === "all" ? "todo" : (state.stock[p.id] ?? ""), p.brand || "", p.packType || "", p.packSize || "", p.jumbo && p.jumbo.n || "", p.jumbo && p.jumbo.p || "", p.jumbo && p.jumbo.d || "", p.jumbo && p.jumbo.s || "", p.jumbo && p.jumbo.p ? (p.jumbo.g ? "por kg" : p.jumbo.c ? p.jumbo.c + " " + p.jumbo.cu : "") : ""])], [40,34,12,16,10,20,12,14,40,12,12,12,12]);
+  add("Productos", [["Producto (nombre único)","Comercio","Unidad","Unidad en plural","En casa","Marca","Envase","Cuánto trae el envase"], ...state.products.map(p => [p.name, p.shop, p.unit, p.plural, state.stock[p.id] === "all" ? "todo" : (state.stock[p.id] ?? ""), p.brand || "", p.packType || "", p.packSize || ""])], [40,34,12,16,10,20,12,14]);
   return wb;
 }
 async function exportExcel(){
@@ -3730,7 +3729,7 @@ function renderSuper(){
   const tabs = [["todos", "Todo", left(all)], ...groups.map(([sh, l]) => [sh, sh.split(" /")[0], left(l)])];
   const shown = groups.filter(([sh]) => superMode.shop === "todos" || sh === superMode.shop);
   const keep = root.querySelector(".su-list") ? root.querySelector(".su-list").scrollTop : 0;
-  root.innerHTML = `<div class="super" role="dialog" aria-modal="true" aria-label="Modo súper">
+  root.innerHTML = `<div class="super" role="dialog" aria-modal="true" aria-label="Ir de compras">
     <div class="su-top"><div class="su-title">🛒 ${done} de ${all.length} en el carrito</div><button class="btn small" id="suHide">${superMode.hide ? "Mostrar lo que ya tengo" : "Ocultar lo que ya tengo"}</button><button class="btn small primary" id="suClose">Salir</button>
       <div class="su-bar"><span style="width:${all.length ? Math.round(done / all.length * 100) : 0}%"></span></div></div>
     <div class="su-tabs">${tabs.map(([k, l, n]) => `<button class="chip" data-sushop="${esc(k)}" aria-pressed="${superMode.shop === k}">${esc(l)} <b>${n || "✓"}</b></button>`).join("")}</div>
