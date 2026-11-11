@@ -201,6 +201,12 @@ td.uses{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .snackline .x{border:0;background:none;font-size:1.2rem;color:var(--muted);cursor:pointer}
 button.schip{cursor:pointer;font-family:inherit}
 .item.stockrow{grid-template-columns:1fr auto;cursor:default}
+.fzfacts{display:grid;gap:3px;background:#EEF4FA;border:1px solid #C9DCEE;color:#24496E;border-radius:var(--r);padding:10px 12px;font-size:.92rem}
+.fzfacts.no{background:var(--sunk);border-color:var(--line);color:var(--fg)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fzfacts:not(.no){background:#18222D;border-color:#34506B;color:#BCD6EE}}
+:root[data-theme="dark"] .fzfacts:not(.no){background:#18222D;border-color:#34506B;color:#BCD6EE}
+.fzform{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin-top:8px}.fzform .wide{grid-column:1/-1}.fzform .vchk{grid-column:1/-1}
+@media (max-width:640px){.fzform{grid-template-columns:1fr}}
 .fzrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .fzchip{font:inherit;font-size:.78rem;border:1px dashed #8DB3D9;background:transparent;color:#2D5F8F;border-radius:999px;padding:3px 10px;cursor:pointer}
 .fzchip[aria-pressed="true"]{background:#E6F0FA;border-style:solid;font-weight:700}
@@ -761,6 +767,14 @@ function slotsOf(days, preps, ppl, vn){
   (preps || []).forEach(p => s.push({rid:p, label:"Para tener listo", people: ppl}));
   return s.filter(x => x.rid && recById(x.rid));
 }
+const THAW = {heladera: "en la heladera, la noche anterior", directo: "no hace falta: va directo del freezer", micro: "en el microondas (modo descongelar)"};
+const fzMonths = r => (r && r.fz && Number(r.fz.m)) || 3;
+function fzFacts(r){
+  const f = r && r.fz; if (!f) return "";
+  if (f.can === false) return `<div class="fzfacts no">🧊 <b>No conviene congelarla.</b>${f.note ? " " + esc(f.note) : ""}</div>`;
+  return `<div class="fzfacts"><span>🧊 Dura <b>${fzMonths(r)} ${fzMonths(r) === 1 ? "mes" : "meses"}</b></span>${f.thaw ? `<span>Descongelar: ${esc(THAW[f.thaw] || f.thaw)}</span>` : ""}${f.re ? `<span>Para comerla: ${esc(f.re)}</span>` : ""}${f.note ? `<span class="hint">${esc(f.note)}</span>` : ""}</div>`;
+}
+function fzLeft(x){ const r = recById(x.rid), lim = (r ? fzMonths(r) : 3) * 30, age = daysAgo(x.date); return {age, left: lim - age, lim}; }
 const fzOf = rid => state.freezer.filter(x => x.rid === rid).reduce((a, x) => a + (Number(x.n) || 0), 0);
 const slotPeople = (i, f) => state.comensales + (f === "dinner" && feedsVianda(i) ? viandaN() : 0);
 function fzTake(rid, n){ // saca n porciones, primero lo más viejo
@@ -968,7 +982,62 @@ function migrateUserRecipes(s){
     const NO = /sopa|pizza|risotto|omelette|huevo a caballo|revuelto|^asado$|panqueque|arroz con leche|huevos rellenos|ensalada rusa|tacos/i;
     for (const r of s.recipes) if (r.vianda === undefined && !["Salsa", "Base", "Guarnición"].includes(r.cat) && !r.special) r.vianda = !NO.test(r.name);
   }
-  s.migUser = 10;
+  if (s.migUser < 11 && !s.recipes.some(r => /^Caldo de verduras casero/.test(r.name))) {
+    const salG = pid("Sal gruesa", "Almacén", "g", "g"), vino = pid("Vino blanco", "Almacén", "ml", "ml");
+    for (const [id, br, pt, ps] of [[salG, "Celusal", "paquete", 1000], [vino, "", "botella", 750]]) { const pr = s.products.find(x => x.id === id); if (pr && !pr.packType) Object.assign(pr, {brand: pr.brand || br, packType: pt, packSize: ps}); }
+    s.recipes.push({...base, id: rid(), cat: "Base", name: "Caldo de verduras casero (calditos)", serves: 3,
+      rows: [
+        {q: 2, u: "", name: "zanahoria", p: pid("Zanahoria")},
+        {q: 200, u: "g", name: "calabaza", p: pid("Calabaza")},
+        {q: 1, u: "", name: "cebolla", p: pid("Cebolla")},
+        {q: 0.5, u: "", name: "espinaca", p: pid("Espinaca", "Verdulería", "atado", "atados")},
+        {q: 1, u: "", name: "choclo", p: pid("Choclo")},
+        {q: 1, u: "", name: "berenjena", p: pid("Berenjena", "Verdulería", "unidad", "unidades")},
+        {q: 1, u: "", name: "zapallito", p: pid("Zapallito")},
+        {q: 1, u: "", name: "perejil", p: pid("Perejil")},
+        {q: 2, u: "", name: "ajo (dientes grandes)", p: pid("Ajo")},
+        {q: 300, u: "g", name: "sal gruesa", p: salG},
+        {q: 200, u: "ml", name: "vino blanco (1 vaso)", p: vino}],
+      prep: "1. Lavá y cortá todas las verduras en trozos (en total, 1 kg: usá las que tengas, con alguna de hoja y alguna firme, como papa o zanahoria).\n2. Poné todo en una olla con la sal gruesa, el perejil, el ajo y el vaso de vino (el único líquido). Tapá y cociná a fuego medio-bajo, revolviendo de vez en cuando.\n3. Cuando las verduras larguen su agua, destapá y dejá que se evapore todo, revolviendo para que no se pegue. En total, aproximadamente 1 hora y media.\n4. Cuando quede una pasta, procesá con la minipimer hasta que esté bien lisa.\n5. Volvé la pasta a la olla y evaporá todo el líquido que puedas, revolviendo sin parar.\n6. Dejá enfriar, pasá a frascos y al freezer.",
+      serve: "Rinde unos 6 frasquitos. Dura al menos 6 meses en el freezer.\nCómo se usa: 1 cucharadita colmada equivale a 1 cubito de caldo. Por la sal no se congela del todo: sacás la cucharadita y devolvés el frasco al freezer.",
+      tTotal: 100, tActive: 30, tNote: "",
+      tags: ["Para el freezer"], note: "1 cucharadita colmada = 1 cubito de caldo.", link: "https://www.paulinacocina.net/como-hacer-caldo-de-verduras-deshidratado-calditos/2278",
+      tips: "• La receta es una tanda fija: no hace falta escalarla por comensales.\n• Queda menos salado que los cubitos comprados. Para un sabor más parecido al comercial, usá hasta 500 g de sal.\n• Si usás poca sal (o nada), se congela duro: congelalo en cubetera y guardá los cubitos en una bolsa.\n• Variante de pollo: dorá 1 pechuga en aceite antes de sumar las verduras, cociná igual, sacala antes de procesar y usá medio vaso de vino."});
+  }
+  if (s.migUser < 12) {
+    const D = {directo: "directo", hel: "heladera", mic: "micro"};
+    const RULES = [
+      [/^Ensalada|Huevos rellenos|^Omelette|Revuelto|Huevo a caballo|Salsa criolla|Salsa de yogur|Salsa golf|Salsa rosa|Risotto|Arroz con leche|Brócoli salteado|Verduritas al horno|^Fideos|manteca y queso/i, {can: false, note: "No conviene congelarla: pierde textura o se corta. Mejor hacerla en el momento."}],
+      [/Tortilla de papa/i, {can: false, note: "La papa congelada queda aguachenta: mejor hacerla en el momento."}],
+      [/Paella|Arroz seco/i, {can: false, note: "El arroz seco se pasa al recalentar: mejor en el momento."}],
+      [/^Milanesa/i, {m: 3, thaw: D.directo, re: "Freír u hornear directo del freezer, sin descongelar: unos minutos más por lado.", note: "Congelalas crudas y empanadas, separadas con film o papel manteca."}],
+      [/^Empanadas/i, {m: 3, thaw: D.directo, re: "Horno fuerte (220 °C) directo del freezer, 5 a 10 minutos más que frescas.", note: "Congelalas crudas sobre una placa y, ya duras, pasalas a una bolsa."}],
+      [/^Tarta/i, {m: 3, thaw: D.directo, re: "Horno 180 °C directo del freezer: 35–40 min si está cruda, 20–25 min si ya estaba cocida (tapada con aluminio al principio)."}],
+      [/^Masa de tarta/i, {m: 2, thaw: D.hel, re: "Descongelar en la heladera y estirar."}],
+      [/^Chipá/i, {m: 3, thaw: D.directo, re: "Bollitos crudos directo al horno, unos minutos más que frescos.", note: "Congelalos crudos sobre una placa y después en bolsa."}],
+      [/^Pizza/i, {m: 3, thaw: D.directo, re: "Prepizza directo del freezer al horno con la salsa y el queso."}],
+      [/Hamburguesa|Croquetas|Nuggets|Bocaditos|Falafel/i, {m: 3, thaw: D.directo, re: "Cocinar directo del freezer (plancha, horno o fritura), unos minutos más."}],
+      [/Pastel de papa|rellen|gratén|Papas a la crema/i, {m: 3, thaw: D.hel, re: "Horno 180 °C, 25–30 min tapado con aluminio y unos minutos destapado para dorar."}],
+      [/Guiso|Locro|lentejas/i, {m: 3, thaw: D.hel, re: "Olla a fuego bajo con un chorrito de agua, o microondas revolviendo a la mitad."}],
+      [/Pesto/i, {m: 6, thaw: D.directo, re: "Directo del freezer: se suma el cubito a la pasta caliente.", note: "Congelalo en cubetera, sin el queso (se agrega al servir)."}],
+      [/Chimichurri|Salmorreta/i, {m: 6, thaw: D.directo, re: "Un cubito directo del freezer.", note: "Congelalo en cubetera y guardá los cubitos en una bolsa."}],
+      [/calditos/i, {m: 6, thaw: D.directo, re: "Directo del frasco: 1 cucharadita colmada = 1 cubito."}],
+      [/Caldo/i, {m: 3, thaw: D.directo, re: "Directo a la olla.", note: "Congelalo en porciones (cubetera o potes chicos)."}],
+      [/4 quesos|Salsa blanca|Salsa de champiñones/i, {m: 2, thaw: D.hel, re: "Fuego bajo batiendo: puede cortarse un poco y se arregla batiendo.", note: "Las salsas con lácteos se congelan bien, pero al recalentar hay que batir."}],
+      [/Ñoquis/i, {m: 2, thaw: D.directo, re: "Directo del freezer al agua hirviendo: están cuando suben.", note: "Congelalos crudos y separados sobre una placa enharinada."}],
+      [/Salsa|Tuco|bolognesa|filetto/i, {m: 3, thaw: D.directo, re: "Directo a la olla a fuego bajo, con un chorrito de agua."}],
+      [/Panqueques/i, {m: 2, thaw: D.directo, re: "Se descongelan en minutos, o directo a la sartén.", note: "Separalos con papel manteca para sacarlos de a uno."}],
+      [/Muffins de huevo|Frittata/i, {m: 2, thaw: D.hel, re: "Microondas 1 minuto u horno 160 °C, 10 minutos."}],
+      [/Filet de merluza/i, {m: 2, thaw: D.hel, re: "Horno o sartén tapada, sin pasarse.", note: "Mejor congelar el filet crudo (hasta 3 meses) y cocinarlo directo del freezer."}],
+      [/Pollo al horno|Asado|Bifecitos|Wok|Tacos|Arroz con pollo|Ensalada rusa/i, {m: 2, thaw: D.hel, re: "Microondas o sartén tapada, con un chorrito de agua o caldo para que no se seque."}],
+      [/^Arroz|Pilaf/i, {m: 1, thaw: D.hel, re: "Microondas tapado, con un chorrito de agua."}],
+      [/Puré/i, {m: 2, thaw: D.hel, re: "Olla o microondas con un chorrito de leche, batiendo."}],
+      [/Calabaza y batata/i, {m: 2, thaw: D.directo, re: "Horno 200 °C directo del freezer, 15 minutos."}],
+      [/Sopa/i, {m: 2, thaw: D.hel, re: "Olla a fuego bajo; si queda arenosa, una pasada de minipimer.", note: "Las sopas con papa pueden quedar algo arenosas."}],
+    ];
+    for (const r of s.recipes) { if (r.fz) continue; const hit = RULES.find(([re]) => re.test(r.name)); if (hit) r.fz = {can: true, m: null, thaw: "", re: "", note: "", ...hit[1]}; }
+  }
+  s.migUser = 12;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
@@ -1751,7 +1820,9 @@ function freezerSection(){
       <button class="btn small" id="fzAddOpen">${fzAdd ? "Cancelar" : "+ Agregar"}</button></div>
     ${fzAdd ? `<div class="saveform" style="margin:0"><select id="fzRec" style="max-width:260px">${recOpts}</select><input id="fzName" placeholder="¿Qué es? (ej.: tuco casero)" style="max-width:220px;display:none"><input id="fzN" type="number" min="1" step="1" value="${state.comensales}" style="max-width:80px" aria-label="Porciones"><span class="hint">porciones</span><button class="btn primary small" id="fzSave">Guardar</button></div>` : ""}
     ${items.length ? `<ul class="fzlist">${items.map(x => { const r = recById(x.rid), age = daysAgo(x.date);
-      return `<li><span class="fzn">${esc(r ? r.name : x.name)}${r ? ` <button class="open" data-open="${r.id}">ver</button>` : ""}<span class="hint">congelado ${agoText(age)}${age > 90 ? ` · <b style="color:var(--warn)">⚠ usar pronto</b>` : ""}</span></span>
+      const L = fzLeft(x), th = r && r.fz && r.fz.thaw;
+      const st = L.left < 0 ? ` · <b style="color:var(--warn)">⚠ pasó su tiempo (${L.lim / 30} ${L.lim === 30 ? "mes" : "meses"})</b>` : L.left <= 21 ? ` · <b style="color:var(--warn)">⚠ usar pronto: quedan ${L.left} ${L.left === 1 ? "día" : "días"}</b>` : ` · dura hasta ${L.lim / 30} ${L.lim === 30 ? "mes" : "meses"}`;
+      return `<li><span class="fzn">${esc(r ? r.name : x.name)}${r ? ` <button class="open" data-open="${r.id}">ver</button>` : ""}<span class="hint">congelado ${agoText(age)}${st}${th ? ` · descongelar ${th === "directo" ? "no hace falta" : THAW[th]}` : ""}</span></span>
         <span class="fzq"><button class="iconbtn" data-fzn="${x.id}:-1" aria-label="Una porción menos">−</button><b>${x.n}</b><button class="iconbtn" data-fzn="${x.id}:1" aria-label="Una porción más">+</button><span class="hint">porc.</span><button class="x" data-fzdel="${x.id}" aria-label="Quitar" title="Quitar">×</button></span></li>`; }).join("")}</ul>` : `<p class="hint" style="margin:0">Vacío. Cuando congeles algo, agregalo acá o desde la receta con «🧊 Al freezer».</p>`}</section>`;
 }
 function viandaBox(i){
@@ -1868,7 +1939,7 @@ function suggestFor(i, f, o, lm, exclude){
   for (const r of cands) {
     let sc = Math.random() * 1.2;
     if (o.fav && r.fav) sc += 1;
-    const fzn = fzOf(r.id); if (fzn) sc += 1.5 + (state.freezer.some(x => x.rid === r.id && daysAgo(x.date) > 60) ? 1 : 0);
+    const fzn = fzOf(r.id); if (fzn) sc += 1.5 + (state.freezer.some(x => x.rid === r.id && fzLeft(x).left <= 30) ? 1 : 0);
     for (const t of o.tags) if ((r.tags || []).includes(t)) sc += .8;
     const x = lm[r.id]; if (o.recent && x) { const n = daysAgo(x.date); if (n < 14) sc -= 2.5; else if (n < 28) sc -= .8; }
     sc -= .6 * (catCount[r.cat] || 0);
@@ -2233,7 +2304,7 @@ function renderModal(){
     body = `<div class="head"><h2>${esc(d.name)}</h2>${starBtn(recById(d.id) || d)}<button class="btn small primary" id="mCook">👩‍🍳 Cocinar</button><button class="btn small" id="mBuy" aria-pressed="${!!modal.buy}">🛒 Comprar</button>${!isSalsa(d) || d.cat === "Salsa" ? `<button class="btn small" id="mFz" aria-pressed="${!!modal.fz}" title="Anotá las porciones que congelaste">🧊 Al freezer${fzOf(d.id) ? " (" + fzOf(d.id) + ")" : ""}</button>` : ""}${isPaella(d) ? `<button class="btn small" id="mCalc">🥘 Calcular paellera</button>` : ""}${d.mold ? `<button class="btn small" id="mMold">🧁 Para mi molde</button>` : ""}<button class="btn small" data-spec="${d.id}">${recById(d.id) && recById(d.id).special ? "Quitar la marca de especial" : "🎉 Marcar como especial"}</button><button class="btn small" id="mPdf">PDF</button><button class="btn small" id="mEdit">Editar</button><button class="btn small" id="mClose">Cerrar</button></div>
       <div class="hint">${esc(d.cat)}${timeLabel(d) ? " · " + esc(timeLabel(d)) : ""}${(d.tags || []).length ? " · " + d.tags.map(esc).join(", ") : ""}${n ? ` · en el menú ${n} ${n === 1 ? "vez" : "veces"}` : ""}${(() => { const c = recipeCost(d, modal.people); return c.tot > 0 ? ` · <b>💲 aprox. ${money(c.tot)}</b> para ${modal.people}${c.miss ? ` (${c.miss} ingredientes sin precio)` : ""}` : ""; })()}${(() => { const x = lastMade()[d.id]; return x ? ` · <b>última vez: ${agoText(daysAgo(x.date))}</b> (${fmtDay(x.date)}, ${x.count} ${x.count === 1 ? "vez" : "veces"} en el historial)` : ""; })()}${d.link ? ` · <a href="${esc(d.link)}" target="_blank" rel="noopener">receta original</a>` : ""}</div>
       ${!isSide(d) && !d.special && state.recipes.some(isGuar) ? `<div class="sidepick"><label for="mSide">${pastaish(d) ? "🍝 Con salsa o guarnición" : "🥗 Con guarnición"}</label><select id="mSide">${sideOptions(d, modal.side, pastaish(d) ? "— sola —" : "— sin guarnición —")}</select>${recById(modal.side) ? `<span class="hint">Se suma a ingredientes, compras, modo cocina y PDF.</span>` : ""}</div>` : ""}
-      ${modal.fz ? `<div class="saveform" style="margin:6px 0"><span>🧊 ¿Cuántas porciones congelaste?</span><input id="mFzN" type="number" min="1" step="1" value="${modal.vn || state.comensales}" style="max-width:80px"><button class="btn small primary" id="mFzSave">Guardar en el freezer</button></div>` : ""}
+      ${modal.fz ? `${d.fz && d.fz.can === false ? `<div class="err" style="margin:6px 0">Ojo: según su ficha, esta receta no conviene congelarla.</div>` : ""}<div class="saveform" style="margin:6px 0"><span>🧊 ¿Cuántas porciones congelaste?${d.fz && d.fz.can !== false ? ` <span class="hint">(dura ${fzMonths(d)} ${fzMonths(d) === 1 ? "mes" : "meses"})</span>` : ""}</span><input id="mFzN" type="number" min="1" step="1" value="${modal.vn || state.comensales}" style="max-width:80px"><button class="btn small primary" id="mFzSave">Guardar en el freezer</button></div>` : ""}
       ${modal.vn ? `<div class="vbox" style="margin:6px 0">🍱 Cantidades para ${modal.people}: incluye ${modal.vn} ${modal.vn === 1 ? "porción" : "porciones"} para la vianda de mañana.</div>` : ""}
       ${d.note ? `<div class="autonote">${esc(d.note)}</div>` : ""}
       ${d.prev && d.prev.when ? `<div class="remind">⏰ ${d.prev.when === "noche" ? "La noche anterior" : "Unas horas antes"}: ${esc(d.prev.text)}</div>` : ""}
@@ -2246,7 +2317,8 @@ function renderModal(){
       <div><h3>Preparación</h3><div class="pre">${esc(d.prep) || "—"}</div></div>
       ${d.serve ? `<div><h3>Para terminar y servir</h3><div class="pre">${esc(d.serve)}</div></div>` : ""}
       ${d.timeline ? `<div><h3>Línea de tiempo</h3><div class="pre">${esc(d.timeline)}</div></div>` : ""}
-      ${d.tips ? `<div><h3>Tips</h3><div class="pre">${esc(d.tips)}</div></div>` : ""}`;
+      ${d.tips ? `<div><h3>Tips</h3><div class="pre">${esc(d.tips)}</div></div>` : ""}
+      ${d.fz ? `<div><h3>Freezer</h3>${fzFacts(d)}</div>` : ""}`;
   } else {
     body = `<div class="head"><h2>${d.id ? "Editar receta" : "Nueva receta"}</h2><button class="btn small" id="mCancel">Cancelar</button><button class="btn small primary" id="mSave">Guardar</button></div>
       ${modal.error ? `<div class="err">${esc(modal.error)}</div>` : ""}
@@ -2292,6 +2364,12 @@ function renderModal(){
         <label class="f">Para terminar y servir<textarea id="fServe" rows="4">${esc(d.serve || "")}</textarea></label>
         <label class="f">Línea de tiempo<textarea id="fTimeline" rows="4">${esc(d.timeline || "")}</textarea></label>
         <label class="f">Tips<textarea id="fTips" rows="4">${esc(d.tips || "")}</textarea></label></div></details>
+      <details${d.fz ? " open" : ""}><summary class="hint" style="cursor:pointer;font-weight:600">🧊 Ficha de freezer</summary>
+        <div class="fzform"><label class="vchk"><input type="checkbox" id="fFzCan"${!d.fz || d.fz.can !== false ? " checked" : ""}> Se puede congelar</label>
+        <label class="f">Dura (meses)<input id="fFzM" type="number" min="1" max="12" step="1" value="${d.fz && d.fz.m ? d.fz.m : ""}" placeholder="3"></label>
+        <label class="f">Cómo descongelar<select id="fFzThaw"><option value="">—</option>${Object.entries(THAW).map(([k, v]) => `<option value="${k}"${d.fz && d.fz.thaw === k ? " selected" : ""}>${v.charAt(0).toUpperCase() + v.slice(1)}</option>`).join("")}</select></label>
+        <label class="f wide">Cómo recalentar o cocinar<input id="fFzRe" value="${esc((d.fz && d.fz.re) || "")}" placeholder="Ej.: horno 180 °C, 20 min tapado"></label>
+        <label class="f wide">Nota<input id="fFzNote" value="${esc((d.fz && d.fz.note) || "")}" placeholder="Ej.: congelar crudas, separadas con film"></label></div></details>
       <label class="f">Link (opcional)<input id="fLink" value="${esc(d.link)}"></label>
       ${d.id ? (modal.confirmDel
         ? `<div class="confirm"><span>¿Borrar «${esc(d.name)}»? ${recipeUseCount(d.id) || recipeEvents(d.id).length ? "También se quita del menú y de las comidas especiales." : ""}</span><button class="btn small danger" id="mDelYes">Sí, borrar</button><button class="btn small" id="mDelNo">No</button></div>`
@@ -2306,7 +2384,9 @@ function readDraft(){
     const num = x => x === "" || x === undefined ? null : Math.max(0, Number(x)) || null;
     d.tTotal = num(v("fTT")); d.tActive = num(v("fTA")); d.tNote = (v("fTN") || "").trim().replace(/^\+\s*/, "");
     d.prev = {when: v("fPW") || "", text: (v("fPT") || "").trim()}; d.link = v("fLink").trim(); d.fav = !!document.getElementById("fFav")?.checked; if (document.getElementById("fVianda")) d.vianda = document.getElementById("fVianda").checked; if (document.querySelector(".fSide")) d.sides = [...document.querySelectorAll(".fSide:checked")].map(x => x.value); { const pr = v("fPart"); d.parts = pr ? [{rid: pr, label: /masa/i.test((recById(pr) || {}).name || "") ? "Masa" : (recById(pr) || {}).name}] : []; } { const mf = v("fMoldF"), mx = Number(v("fMoldX")), my = Number(v("fMoldY")); d.mold = mf && mx > 0 ? {f: mf, x: mx, y: mf === "rect" ? (my || mx) : null} : null; } d.special = !!document.getElementById("fSpec")?.checked; if (d.special) spOf(d);
-    d.serves = Math.max(1, Math.round(Number(v("fServes")) || 3)); d.before = v("fBefore") || ""; d.serve = v("fServe") || ""; d.timeline = v("fTimeline") || ""; d.tips = v("fTips") || ""; }
+    d.serves = Math.max(1, Math.round(Number(v("fServes")) || 3)); d.before = v("fBefore") || ""; d.serve = v("fServe") || ""; d.timeline = v("fTimeline") || ""; d.tips = v("fTips") || "";
+    if (document.getElementById("fFzCan")) { const can = document.getElementById("fFzCan").checked, m = Math.round(Number(v("fFzM")) || 0), th = v("fFzThaw") || "", re = (v("fFzRe") || "").trim(), nt = (v("fFzNote") || "").trim();
+      d.fz = (!can || m || th || re || nt || d.fz) ? {can, m: m || null, thaw: th, re, note: nt} : undefined; if (!d.fz) delete d.fz; } }
   (d.rows || []).forEach((x, k) => {
     const q = v("rq-" + k), u = v("ru-" + k), n = v("rn-" + k), pp = v("rp-" + k);
     if (q !== undefined) x.q = q === "" ? null : Number(q);
@@ -3092,7 +3172,10 @@ function weekReminders(){
     const pz = n => n + " " + (n === 1 ? "porción" : "porciones");
     if (feedsVianda(i) && recById(d.dinner)) out[i].push({kind: "hoy", text: d.dinnerFz ? `Cena del freezer: separá ${pz(viandaN())} para la vianda de mañana` : `Cena: cociná para ${state.comensales + viandaN()} y separá ${pz(viandaN())} para la vianda de mañana`});
     for (const [f, label] of [["lunch", "el almuerzo"], ["dinner", "la cena"]]) { const r = recById(d[f]); if (!r || !d[f + "Fz"] || (f === "lunch" && d.vianda)) continue;
-      out[(i + 6) % 7].push({kind: "manana", text: `Para mañana (${label} del ${d.day.toLowerCase()}): pasá ${pz(slotPeople(i, f))} de ${r.name.toLowerCase()} del freezer a la heladera`}); }
+      const th = r.fz && r.fz.thaw;
+      if (th === "directo") out[i].push({kind: "hoy", text: `${label.charAt(0).toUpperCase() + label.slice(1)}: ${r.name.toLowerCase()} sale directo del freezer (${pz(slotPeople(i, f))})${r.fz.re ? ". " + r.fz.re : ", sin descongelar"}`});
+      else if (th === "micro") out[i].push({kind: "hoy", text: `${label.charAt(0).toUpperCase() + label.slice(1)}: descongelá ${pz(slotPeople(i, f))} de ${r.name.toLowerCase()} en el microondas`});
+      else out[(i + 6) % 7].push({kind: "manana", text: `Para mañana (${label} del ${d.day.toLowerCase()}): pasá ${pz(slotPeople(i, f))} de ${r.name.toLowerCase()} del freezer a la heladera`}); }
     for (const [f, label] of [["lunch","el almuerzo"],["lunchSalsa","el almuerzo"],["dinner","la cena"],["dinnerSalsa","la cena"]]) {
       if (d.vianda && f.startsWith("lunch")) continue;
       const r = recById(d[f]); if (!r || !r.prev || !r.prev.when) continue;
