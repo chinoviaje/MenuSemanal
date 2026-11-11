@@ -201,6 +201,20 @@ td.uses{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .snackline .x{border:0;background:none;font-size:1.2rem;color:var(--muted);cursor:pointer}
 button.schip{cursor:pointer;font-family:inherit}
 .item.stockrow{grid-template-columns:1fr auto;cursor:default}
+.mpbox{border-left-color:#B07A2C}
+.mplist li{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--fg);font-weight:400;width:100%;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line)}
+.mplist li.done .mpn{opacity:.7}.mplist li .open{color:var(--accent)}.mplist li .x{color:var(--muted)}.mpn{display:flex;gap:6px;align-items:baseline;font-weight:600;margin-right:auto}
+.mpt{display:flex;gap:6px;align-items:center}.mplow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.mpinfo{background:#FBF3E6;border:1px solid #E7CFA4;color:#6E4A12;border-radius:var(--r);padding:8px 12px;font-size:.9rem;margin:6px 0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .mpinfo{background:#2A2214;border-color:#5E4A24;color:#E8C88E}}
+:root[data-theme="dark"] .mpinfo{background:#2A2214;border-color:#5E4A24;color:#E8C88E}
+.mpstock{margin-top:14px}.mptable{display:grid;gap:0}
+.mprow{display:grid;grid-template-columns:minmax(0,1fr) auto 96px 130px;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}
+.mpq{display:flex;gap:6px;align-items:center}.mpq b{min-width:1.6em;text-align:center}
+.mpst{font-size:.75rem;font-weight:700;border-radius:999px;padding:3px 9px;text-align:center}
+.mpst.ok{background:var(--gua);color:var(--gua-fg)}.mpst.low{background:#FBF3E6;color:#8A5A10}.mpst.out{background:var(--salsa);color:var(--salsa-fg)}
+@media (max-width:640px){.mprow{grid-template-columns:1fr auto;}.mprow .mpname{grid-column:1/-1}}
+.mpform{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}.mpform input{width:auto;max-width:200px}.mpform #fMpQ,.mpform #fMpMin{max-width:80px}
 .fzfacts{display:grid;gap:3px;background:#EEF4FA;border:1px solid #C9DCEE;color:#24496E;border-radius:var(--r);padding:10px 12px;font-size:.92rem}
 .fzfacts.no{background:var(--sunk);border-color:var(--line);color:var(--fg)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fzfacts:not(.no){background:#18222D;border-color:#34506B;color:#BCD6EE}}
@@ -452,7 +466,10 @@ function normalize(s){
   if (!Array.isArray(s.saved)) s.saved = [];
   if (!Array.isArray(s.history)) s.history = [];
   s.planner = Object.assign({fill:"huecos", meals:"ambas", fav:true, recent:true, quick:false, tags:[], useTpl:false}, s.planner || {});
-  if (!Array.isArray(s.freezer)) s.freezer = []; // [{id, rid|null, name, n: porciones, date}]
+  if (!Array.isArray(s.freezer)) s.freezer = [];
+  if (!s.prepTandas || typeof s.prepTandas !== "object" || Array.isArray(s.prepTandas)) s.prepTandas = {};
+  if (!s.mpSeen || typeof s.mpSeen !== "object" || Array.isArray(s.mpSeen)) s.mpSeen = {};
+  if (!s.prepDone || typeof s.prepDone !== "object" || Array.isArray(s.prepDone)) s.prepDone = {}; // [{id, rid|null, name, n: porciones, date}]
   s.weekTpl = Object.assign({rules: DAYS.map(() => ["", ""]), vianda: DAYS.map(() => false)}, s.weekTpl || {});
   if (!Array.isArray(s.weekTpl.rules) || s.weekTpl.rules.length !== 7) s.weekTpl.rules = DAYS.map(() => ["", ""]);
   if (!Array.isArray(s.weekTpl.vianda) || s.weekTpl.vianda.length !== 7) s.weekTpl.vianda = DAYS.map(() => false);
@@ -764,7 +781,7 @@ function slotsOf(days, preps, ppl, vn){
     if (!d.vianda) s.push({rid: d.lunchFz ? null : d.lunch, label:dn + " almuerzo", people: ppl}, {rid:d.lunchSalsa, label:dn + " almuerzo (" + sideWord(recById(d.lunchSalsa)) + ")", people: ppl});
     s.push({rid: d.dinnerFz ? null : d.dinner, label:dn + " cena" + (extra ? " (+ vianda)" : ""), people: ppl + extra}, {rid:d.dinnerSalsa, label:dn + " cena (" + sideWord(recById(d.dinnerSalsa)) + ")", people: ppl + extra});
   });
-  (preps || []).forEach(p => s.push({rid:p, label:"Para tener listo", people: ppl}));
+  (preps || []).forEach(p => { const r = recById(p); s.push({rid:p, label:"Meal prep", people: isMP(r) ? serves(r) * ((state.prepTandas || {})[p] || 1) : ppl}); });
   return s.filter(x => x.rid && recById(x.rid));
 }
 const THAW = {heladera: "en la heladera, la noche anterior", directo: "no hace falta: va directo del freezer", micro: "en el microondas (modo descongelar)"};
@@ -775,6 +792,20 @@ function fzFacts(r){
   return `<div class="fzfacts"><span>🧊 Dura <b>${fzMonths(r)} ${fzMonths(r) === 1 ? "mes" : "meses"}</b></span>${f.thaw ? `<span>Descongelar: ${esc(THAW[f.thaw] || f.thaw)}</span>` : ""}${f.re ? `<span>Para comerla: ${esc(f.re)}</span>` : ""}${f.note ? `<span class="hint">${esc(f.note)}</span>` : ""}</div>`;
 }
 function fzLeft(x){ const r = recById(x.rid), lim = (r ? fzMonths(r) : 3) * 30, age = daysAgo(x.date); return {age, left: lim - age, lim}; }
+const isMP = r => !!(r && r.mp);
+const mpQ = r => Number(r.mp && r.mp.q) || serves(r);
+const nfmt = n => String(Math.round(n * 10) / 10).replace(".", ",");
+const mpYield = (r, t) => nfmt(mpQ(r) * (t || 1)) + " " + ((r.mp && r.mp.u) || "porciones");
+const mpMin = r => Number(r.mp && r.mp.min) || Math.max(1, Math.ceil(mpQ(r) / 3));
+function mpStatus(r){ const n = fzOf(r.id); return n <= 0 ? "out" : n <= mpMin(r) ? "low" : "ok"; }
+const mpAlert = r => { const st = mpStatus(r); return st === "low" || (st === "out" && !!(state.mpSeen || {})[r.id]); }; // avisa si se está terminando (o se terminó algo que tenías)
+const mpKw = r => (r.mp && r.mp.kw) || r.name.toLowerCase().replace(/\(.*?\)/g, "").replace(/\bcaser[oa]s?\b/g, "").replace(/\s+/g, " ").trim();
+function mpUses(d){ // preparaciones de meal prep que lleva esta receta
+  const rows = (d.rows || []).map(x => (x.name || "").toLowerCase());
+  return state.recipes.filter(r => isMP(r) && r.id !== d.id && rows.some(n => n.includes(mpKw(r))));
+}
+const fzUnit = (x, n) => x.u || (n === 1 ? "porción" : "porc.");
+function fzAddUnits(rid, n, u){ if (isMP(recById(rid))) { state.mpSeen = state.mpSeen || {}; state.mpSeen[rid] = true; } state.freezer.push({id: newId("f", state.freezer), rid, name: "", n, u: u || "", date: isoDate(new Date())}); }
 const fzOf = rid => state.freezer.filter(x => x.rid === rid).reduce((a, x) => a + (Number(x.n) || 0), 0);
 const slotPeople = (i, f) => state.comensales + (f === "dinner" && feedsVianda(i) ? viandaN() : 0);
 function fzTake(rid, n){ // saca n porciones, primero lo más viejo
@@ -1037,7 +1068,14 @@ function migrateUserRecipes(s){
     ];
     for (const r of s.recipes) { if (r.fz) continue; const hit = RULES.find(([re]) => re.test(r.name)); if (hit) r.fz = {can: true, m: null, thaw: "", re: "", note: "", ...hit[1]}; }
   }
-  s.migUser = 12;
+  if (s.migUser < 13) {
+    const MP = [[/calditos/i, {q: 6, u: "frascos"}], [/^Salmorreta/i, {q: 24, u: "cubitos"}], [/^Chimichurri/i, {q: 1, u: "frasco"}], [/^Masa de tarta/i, {q: 1, u: "masa"}],
+      [/^Caldo casero|^Pesto|^Tuco|^Salsa de tomate|^Salsa bolognesa/i, {}]];
+    for (const r of s.recipes) { if (r.mp) continue; const hit = MP.find(([re]) => re.test(r.name)); if (hit) r.mp = {q: hit[1].q || Math.max(1, Math.round(Number(r.serves) || 3)), u: hit[1].u || "porciones"}; }
+    // lo que ya estaba en el freezer de estas recetas se cuenta en su unidad
+    for (const x of (s.freezer || [])) { const r = s.recipes.find(y => y.id === x.rid); if (r && r.mp && !x.u) x.u = r.mp.u; }
+  }
+  s.migUser = 13;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
@@ -1806,16 +1844,17 @@ function pick(i, field, kind){
   return `<div class="pick"><select class="${kind === "salsa" ? "salsa" + (v ? " has" : "") + (isGuar(recById(v)) ? " gua" : "") : "dish"}" id="sel-${i}-${field}" data-day="${i}" data-field="${field}" aria-label="${esc(d.day)} ${kind === "salsa" ? (dish && pastaish(dish) ? "salsa" : "guarnición") : field === "lunch" ? "almuerzo" : "cena"}">${kind === "salsa" ? sideOptions(dish, v) : optionsFor(kind, v)}</select>${v ? `<button class="open" data-open="${v}"${side ? ` data-side="${side.id}"` : ""}${field === "dinner" && feedsVianda(i) ? ` data-people="${state.comensales + viandaN()}" data-vn="${viandaN()}"` : ""}>Ver</button>` : ""}${kind === "dish" ? `<button class="open dice" data-reroll="${i}:${field}" title="Sugerir otro plato" aria-label="Sugerir otro plato">🎲</button>` : ""}</div>`;
 }
 function viewMenu(){
-  const sub = `<div class="subtabs" role="tablist"><button role="tab" data-menuview="comidas" aria-selected="${menuView === "comidas"}">🍽 Almuerzos y cenas</button><button role="tab" data-menuview="snacks" aria-selected="${menuView === "snacks"}">☕ Desayunos, meriendas y colaciones${state.snacks.length ? ` <span class="tabn" style="background:var(--accent)">${state.snacks.length}</span>` : ""}</button><button role="tab" data-menuview="stats" aria-selected="${menuView === "stats"}">📊 Lo que comemos</button></div>`;
+  const sub = `<div class="subtabs" role="tablist"><button role="tab" data-menuview="comidas" aria-selected="${menuView === "comidas"}">🍽 Almuerzos y cenas</button><button role="tab" data-menuview="snacks" aria-selected="${menuView === "snacks"}">☕ Desayunos, meriendas y colaciones${state.snacks.length ? ` <span class="tabn" style="background:var(--accent)">${state.snacks.length}</span>` : ""}</button><button role="tab" data-menuview="mp" aria-selected="${menuView === "mp"}">🥫 Meal prep y freezer${state.recipes.some(r => isMP(r) && mpAlert(r)) ? ` <span class="tabn" style="background:var(--warn)">${state.recipes.filter(r => isMP(r) && mpAlert(r)).length}</span>` : ""}</button><button role="tab" data-menuview="stats" aria-selected="${menuView === "stats"}">📊 Lo que comemos</button></div>`;
   if (menuView === "snacks") return `<div class="toolbar"><h2>Semana</h2></div>` + sub + viewSnacks();
   if (menuView === "stats") return `<div class="toolbar"><h2>Semana</h2></div>` + sub + viewStats();
+  if (menuView === "mp") return `<div class="toolbar"><h2>Semana</h2></div>` + sub + viewMP();
   return viewMenuMeals(sub);
 }
 let fzAdd = false;
 function freezerSection(){
-  const items = [...state.freezer].sort((a, b) => a.date.localeCompare(b.date));
-  const recOpts = `<option value="">Elegí la receta…</option>` + state.recipes.filter(r => !isSalsa(r) || r.cat === "Salsa").sort((a, b) => a.name.localeCompare(b.name, "es")).map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("") + `<option value="__otro">Otra cosa (escribir)</option>`;
-  return `<section class="prepbox fzbox"><div class="toolbar" style="margin:0"><div style="margin-right:auto"><h2>🧊 En el freezer</h2>
+  const items = state.freezer.filter(x => !isMP(recById(x.rid))).sort((a, b) => a.date.localeCompare(b.date));
+  const recOpts = `<option value="">Elegí la receta…</option>` + state.recipes.filter(r => !isMP(r) && (!isSalsa(r) || r.cat === "Salsa")).sort((a, b) => a.name.localeCompare(b.name, "es")).map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("") + `<option value="__otro">Otra cosa (escribir)</option>`;
+  return `<section class="prepbox fzbox"><div class="toolbar" style="margin:0"><div style="margin-right:auto"><h2>🧊 Platos en el freezer</h2>
       <div class="hint">Lo que cocinaste de más y congelaste. Al armar la semana se ofrece primero; si un plato sale del freezer, no se compra. Al pasar la semana al historial se descuenta.</div></div>
       <button class="btn small" id="fzAddOpen">${fzAdd ? "Cancelar" : "+ Agregar"}</button></div>
     ${fzAdd ? `<div class="saveform" style="margin:0"><select id="fzRec" style="max-width:260px">${recOpts}</select><input id="fzName" placeholder="¿Qué es? (ej.: tuco casero)" style="max-width:220px;display:none"><input id="fzN" type="number" min="1" step="1" value="${state.comensales}" style="max-width:80px" aria-label="Porciones"><span class="hint">porciones</span><button class="btn primary small" id="fzSave">Guardar</button></div>` : ""}
@@ -1823,7 +1862,42 @@ function freezerSection(){
       const L = fzLeft(x), th = r && r.fz && r.fz.thaw;
       const st = L.left < 0 ? ` · <b style="color:var(--warn)">⚠ pasó su tiempo (${L.lim / 30} ${L.lim === 30 ? "mes" : "meses"})</b>` : L.left <= 21 ? ` · <b style="color:var(--warn)">⚠ usar pronto: quedan ${L.left} ${L.left === 1 ? "día" : "días"}</b>` : ` · dura hasta ${L.lim / 30} ${L.lim === 30 ? "mes" : "meses"}`;
       return `<li><span class="fzn">${esc(r ? r.name : x.name)}${r ? ` <button class="open" data-open="${r.id}">ver</button>` : ""}<span class="hint">congelado ${agoText(age)}${st}${th ? ` · descongelar ${th === "directo" ? "no hace falta" : THAW[th]}` : ""}</span></span>
-        <span class="fzq"><button class="iconbtn" data-fzn="${x.id}:-1" aria-label="Una porción menos">−</button><b>${x.n}</b><button class="iconbtn" data-fzn="${x.id}:1" aria-label="Una porción más">+</button><span class="hint">porc.</span><button class="x" data-fzdel="${x.id}" aria-label="Quitar" title="Quitar">×</button></span></li>`; }).join("")}</ul>` : `<p class="hint" style="margin:0">Vacío. Cuando congeles algo, agregalo acá o desde la receta con «🧊 Al freezer».</p>`}</section>`;
+        <span class="fzq"><button class="iconbtn" data-fzn="${x.id}:-1" aria-label="Una porción menos">−</button><b>${x.n}</b><button class="iconbtn" data-fzn="${x.id}:1" aria-label="Una porción más">+</button><span class="hint">${esc(fzUnit(x, x.n))}</span><button class="x" data-fzdel="${x.id}" aria-label="Quitar" title="Quitar">×</button></span></li>`; }).join("")}</ul>` : `<p class="hint" style="margin:0">Vacío. Cuando congeles algo, agregalo acá o desde la receta con «🧊 Al freezer». El meal prep (caldos, cubitos…) se ve en «🥫 Meal prep y freezer».</p>`}</section>`;
+}
+function prepOptions(){
+  const by = (a, b) => a.name.localeCompare(b.name, "es"), opt = r => `<option value="${r.id}">${esc(r.name)}${isMP(r) ? " · rinde " + esc(mpYield(r)) + (fzOf(r.id) ? " · hay " + nfmt(fzOf(r.id)) : "") : ""}</option>`;
+  const mp = state.recipes.filter(r => isMP(r) && !state.preps.includes(r.id)).sort(by), other = state.recipes.filter(r => !isMP(r) && isSalsa(r) && !r.special && !state.preps.includes(r.id)).sort(by);
+  return `<option value="">+ Agregar meal prep o salsa…</option>${mp.length ? `<optgroup label="🥫 Meal prep">${mp.map(opt).join("")}</optgroup>` : ""}${other.length ? `<optgroup label="Otras salsas y bases">${other.map(opt).join("")}</optgroup>` : ""}`;
+}
+function mpWeekBox(){
+  const preps = state.preps.filter(id => recById(id));
+  const lows = state.recipes.filter(r => isMP(r) && mpAlert(r) && !preps.includes(r.id));
+  const li = (id, j) => { const r = recById(id), t = state.prepTandas[id] || 1, done = !!state.prepDone[id];
+    return `<li class="${done ? "done" : ""}"><span class="mpn">${isMP(r) ? "🥫 " : ""}${esc(r.name)} <button class="open" data-open="${id}" data-people="${isMP(r) ? serves(r) * t : ""}">ver</button></span>
+      ${isMP(r) ? `<span class="mpt"><button class="iconbtn" data-mptan="${id}:-1" aria-label="Una tanda menos">−</button><b>${t}</b><button class="iconbtn" data-mptan="${id}:1" aria-label="Una tanda más">+</button><span class="hint">${t === 1 ? "tanda" : "tandas"} · rinde ${esc(mpYield(r, t))}</span></span>
+        ${done ? `<span class="hint">✓ hecho, ya está en el stock</span>` : `<button class="btn small" data-mpdone="${id}" title="La hiciste: suma ${esc(mpYield(r, t))} al stock">✓ Listo</button>`}` : ""}
+      <button class="x" data-prepdel="${j}" aria-label="Quitar ${esc(r.name)}" title="Quitar">×</button></li>`; };
+  return `<section class="prepbox mpbox"><div class="toolbar" style="margin:0"><div style="margin-right:auto"><h2>🥫 Meal prep de la semana</h2>
+      <div class="hint">Lo que preparás en tanda para guardar (caldos, salsas, cubitos…). Suma a la lista de compras. Cuando lo hacés, tocá «Listo» y entra al stock.</div></div>
+      <button class="btn small" data-menuview="mp">Ver stock</button></div>
+    ${lows.length ? `<div class="mplow"><span class="hint">Se está terminando:</span>${lows.map(r => `<button class="chip" data-mpweek="${r.id}">+ ${esc(r.name)} <span class="hint">(${fzOf(r.id) ? "quedan " + nfmt(fzOf(r.id)) + " " + esc(r.mp.u) : "sin stock"})</span></button>`).join("")}</div>` : ""}
+    <ul class="preplist mplist">${preps.length ? preps.map(li).join("") : `<span class="hint">Nada por ahora.</span>`}</ul>
+    <select class="salsa prepadd" id="prepAdd" aria-label="Agregar meal prep">${prepOptions()}</select></section>`;
+}
+function viewMP(){
+  const rank = {out: 0, low: 1, ok: 2}, list = state.recipes.filter(isMP).sort((a, b) => rank[mpStatus(a)] - rank[mpStatus(b)] || a.name.localeCompare(b.name, "es"));
+  const badge = st => st === "out" ? `<span class="mpst out">Sin stock</span>` : st === "low" ? `<span class="mpst low">Queda poco</span>` : `<span class="mpst ok">OK</span>`;
+  let h = `<section class="mpstock"><div class="toolbar" style="margin:0 0 6px"><div style="margin-right:auto"><h2>🥫 Stock de meal prep</h2>
+    <div class="hint">Lo que tenés guardado de cada preparación. Usá − cuando sacás algo del freezer; «Listo» en el Menú lo suma solo. Para que una receta aparezca acá: Editar → «🥫 Meal prep».</div></div></div>`;
+  h += list.length ? `<div class="mptable">${list.map(r => { const n = fzOf(r.id), st = mpStatus(r), inW = state.preps.includes(r.id);
+      const old = state.freezer.filter(x => x.rid === r.id).map(fzLeft).sort((a, b) => a.left - b.left)[0];
+      return `<div class="mprow ${st}"><div class="mpname"><b>${esc(r.name)}</b> <button class="open" data-open="${r.id}">ver</button>
+          <div class="hint">rinde ${esc(mpYield(r))} por tanda${old ? old.left < 0 ? ` · <b style="color:var(--warn)">⚠ lo más viejo pasó su tiempo</b>` : old.left <= 21 ? ` · <b style="color:var(--warn)">⚠ lo más viejo vence en ${old.left} días</b>` : "" : ""}</div></div>
+        <div class="mpq"><button class="iconbtn" data-mpst="${r.id}:-1" aria-label="Usé uno">−</button><b>${nfmt(n)}</b><button class="iconbtn" data-mpst="${r.id}:1" aria-label="Agregar uno">+</button><span class="hint">${esc(r.mp.u)}</span></div>
+        ${badge(st)}
+        ${inW ? `<span class="hint">✓ en esta semana</span>` : `<button class="btn small" data-mpweek="${r.id}">+ a esta semana</button>`}</div>`; }).join("")}</div>`
+    : `<p class="hint">Todavía no marcaste ninguna receta como meal prep.</p>`;
+  return h + `</section>` + freezerSection();
 }
 function viandaBox(i){
   const j = (i + 6) % 7, pv = state.days[j], r = recById(pv.dinner), side = recById(pv.dinnerSalsa);
@@ -1859,11 +1933,7 @@ function viewMenuMeals(sub){
       <div class="daynotes"><div><div class="autonote">${esc(autoNote(d))}</div>${rem[i].map(x => `<div class="remind">⏰ ${esc(x.text)}</div>`).join("")}</div>
       <input id="notes-${i}" data-notes="${i}" placeholder="Mis notas" value="${esc(d.notes)}"></div></section>`;
   });
-  const preps = state.preps.filter(id => recById(id));
-  h += `</div><section class="prepbox"><div><h2>Para tener listo esta semana</h2>
-    <div class="hint">Salsas o bases que preparás aparte y usás en varias comidas (caldo, salsa de tomate para el freezer, pesto…). Lo que agregues acá suma a la lista de compras.</div></div>
-    <ul class="preplist">${preps.length ? preps.map((id, j) => `<li>${esc(recById(id).name)} <button class="open" data-open="${id}">ver</button><button class="x" data-prepdel="${j}" aria-label="Quitar ${esc(recById(id).name)}" title="Quitar">×</button></li>`).join("") : `<span class="hint">Nada por ahora.</span>`}</ul>
-    <select class="salsa prepadd" id="prepAdd" aria-label="Agregar preparación">${optionsFor("salsa", null).replace("— sin salsa —", "+ Agregar salsa o preparación…")}</select></section>`;
+  h += `</div>` + mpWeekBox();
   h += freezerSection();
   h += `<section style="margin-top:22px"><div class="toolbar"><h2>Menús guardados</h2><span class="hint">Guardá una semana con nombre y usala de nuevo cuando quieras.</span></div>`;
   if (!state.saved.length) h += `<p class="hint">Todavía no guardaste ninguno. Armá la semana y tocá «Guardar esta semana».</p>`;
@@ -2019,7 +2089,7 @@ function snapshotWeek(){ return {days: state.days.map(d => ({lunch: d.vianda ? n
 function applySaved(m){
   const ok = id => id && recById(id) ? id : null;
   state.days = DAYS.map((day, k) => { const d = m.days[k] || {}; return {day, lunch:ok(d.lunch), lunchSalsa:ok(d.lunchSalsa), dinner:ok(d.dinner), dinnerSalsa:ok(d.dinnerSalsa), notes:d.notes || "", vianda: d.vianda !== undefined ? !!d.vianda : !!(state.days[k] || {}).vianda}; });
-  state.preps = (m.preps || []).map(ok).filter(Boolean);
+  state.preps = (m.preps || []).map(ok).filter(Boolean); state.prepDone = {};
   state.checked = {};
 }
 function shopListHTML(g, checked, scope){
@@ -2174,16 +2244,17 @@ function renderCats(){
 function starBtn(r){ return `<button class="star" data-fav="${r.id}" aria-pressed="${!!r.fav}" title="${r.fav ? "Quitar de favoritos" : "Agregar a favoritos"}" aria-label="${r.fav ? "Quitar de favoritos" : "Agregar a favoritos"}">${r.fav ? "★" : "☆"}</button>`; }
 function viewRecetas(){
   const lm = lastMade();
-  const cats = ["Todas", "★ Favoritos", "Especiales", "Platos", "🍱 Para vianda", "Salsas y bases", ...allCats().filter(c => state.recipes.some(r => r.cat === c) && !["Salsa","Base"].includes(c))];
+  const cats = ["Todas", "★ Favoritos", "Especiales", "Platos", "🍱 Para vianda", "🥫 Meal prep", "Salsas y bases", ...allCats().filter(c => state.recipes.some(r => r.cat === c) && !["Salsa","Base"].includes(c))];
   const q = recFilter.q.trim().toLowerCase();
   const list = state.recipes.filter(r => {
     const f = recFilter.cat;
     if (f === "Platos" && isSide(r)) return false;
     if (f === "🍱 Para vianda" && (isSide(r) || r.special || r.vianda === false)) return false;
+    if (f === "🥫 Meal prep" && !isMP(r)) return false;
     if (f === "Salsas y bases" && !isSalsa(r)) return false;
     if (f === "★ Favoritos" && !r.fav) return false;
     if (f === "Especiales" && !r.special) return false;
-    if (!["Todas","★ Favoritos","Especiales","Platos","🍱 Para vianda","Salsas y bases"].includes(f) && r.cat !== f) return false;
+    if (!["Todas","★ Favoritos","Especiales","Platos","🍱 Para vianda","🥫 Meal prep","Salsas y bases"].includes(f) && r.cat !== f) return false;
     if (recFilter.tag && !(r.tags || []).includes(recFilter.tag)) return false;
     if (recFilter.quick && !(r.tTotal && r.tTotal <= 30)) return false;
     if (recFilter.long && (r.special || isSalsa(r) || (lm[r.id] && daysAgo(lm[r.id].date) < 28))) return false;
@@ -2197,7 +2268,7 @@ function viewRecetas(){
     const n = recipeUseCount(r.id);
     h += `<div class="rcard" role="button" tabindex="0" data-open="${r.id}"><span class="top"><span class="cat${isSide(r) ? " s" : ""}">${esc(r.cat)}${serves(r) !== 3 ? `<span style="opacity:.75"> · rinde ${serves(r)}</span>` : ""}</span>${starBtn(r)}</span><span class="nm">${esc(r.name)}</span>
       <span class="meta">${esc(timeLabel(r) || "")}${lm[r.id] ? `<span class="ago"> · ↻ ${agoText(daysAgo(lm[r.id].date))}</span>` : ""}${r.prev && r.prev.when ? ` · <span title="${esc(r.prev.text)}">⏰ ${r.prev.when === "noche" ? "la noche anterior" : "unas horas antes"}</span>` : ""}</span>
-      <span>${r.special ? `<span class="badge spb">Especial</span> ` : ""}${r.vianda && !isSide(r) && !r.special ? `<span class="badge tag" title="Va en vianda">🍱</span> ` : ""}${fzOf(r.id) ? `<span class="badge tag">🧊 ${fzOf(r.id)}</span> ` : ""}${r.mold ? `<span class="badge tag">🧁 molde ${r.mold.f === "redondo" ? nfx(r.mold.x, 1) + " cm" : nfx(r.mold.x, 1) + (r.mold.f === "rect" ? "×" + nfx(r.mold.y, 1) : "") + " cm"}</span> ` : ""}${n ? `<span class="badge">En el menú ×${n}</span> ` : ""}${(r.tags || []).map(t => `<span class="badge tag">${esc(t)}</span> `).join("")}${!itemsOf(r).length ? `<span class="badge warn">Sin ingredientes para la lista</span>` : ""}</span></div>`;
+      <span>${r.special ? `<span class="badge spb">Especial</span> ` : ""}${isMP(r) ? `<span class="badge tag" title="Meal prep">🥫 ${fzOf(r.id) ? nfmt(fzOf(r.id)) + " " + esc(r.mp.u) : "sin stock"}</span> ` : ""}${r.vianda && !isSide(r) && !r.special ? `<span class="badge tag" title="Va en vianda">🍱</span> ` : ""}${fzOf(r.id) && !isMP(r) ? `<span class="badge tag">🧊 ${fzOf(r.id)}</span> ` : ""}${r.mold ? `<span class="badge tag">🧁 molde ${r.mold.f === "redondo" ? nfx(r.mold.x, 1) + " cm" : nfx(r.mold.x, 1) + (r.mold.f === "rect" ? "×" + nfx(r.mold.y, 1) : "") + " cm"}</span> ` : ""}${n ? `<span class="badge">En el menú ×${n}</span> ` : ""}${(r.tags || []).map(t => `<span class="badge tag">${esc(t)}</span> `).join("")}${!itemsOf(r).length ? `<span class="badge warn">Sin ingredientes para la lista</span>` : ""}</span></div>`;
   }
   return h + `</div>`;
 }
@@ -2272,7 +2343,7 @@ let openPeople = null;
 let openSide = null, openVn = 0, tplOpen = false, superMode = null;
 function openRecipe(id, edit=false){
   const r = id ? recById(id) : null;
-  modal = {id, vn: openVn, side: openSide && r && !isSide(r) ? openSide : null, edit: edit || !r, people: openPeople || (r && r.cat === "Base" ? serves(r) : state.comensales), draft: r ? clone(r) : {id:null, cat:"Pollo", name:"", rows:[{q:null,u:"",name:"",p:null},{q:null,u:"",name:"",p:null},{q:null,u:"",name:"",p:null}], prep:"", tTotal:null, tActive:null, tNote:"", prev:{when:"",text:""}, tags:[], note:"", link:"", fav:true, serves:3, before:"", serve:"", timeline:"", tips:""}, confirmDel:false, error:""};
+  modal = {id, vn: openVn, side: openSide && r && !isSide(r) ? openSide : null, edit: edit || !r, people: openPeople || (r && (r.cat === "Base" || isMP(r)) ? serves(r) : state.comensales), draft: r ? clone(r) : {id:null, cat:"Pollo", name:"", rows:[{q:null,u:"",name:"",p:null},{q:null,u:"",name:"",p:null},{q:null,u:"",name:"",p:null}], prep:"", tTotal:null, tActive:null, tNote:"", prev:{when:"",text:""}, tags:[], note:"", link:"", fav:true, serves:3, before:"", serve:"", timeline:"", tips:""}, confirmDel:false, error:""};
   openPeople = null; openSide = null; openVn = 0;
   renderModal();
 }
@@ -2304,15 +2375,17 @@ function renderModal(){
     body = `<div class="head"><h2>${esc(d.name)}</h2>${starBtn(recById(d.id) || d)}<button class="btn small primary" id="mCook">👩‍🍳 Cocinar</button><button class="btn small" id="mBuy" aria-pressed="${!!modal.buy}">🛒 Comprar</button>${!isSalsa(d) || d.cat === "Salsa" ? `<button class="btn small" id="mFz" aria-pressed="${!!modal.fz}" title="Anotá las porciones que congelaste">🧊 Al freezer${fzOf(d.id) ? " (" + fzOf(d.id) + ")" : ""}</button>` : ""}${isPaella(d) ? `<button class="btn small" id="mCalc">🥘 Calcular paellera</button>` : ""}${d.mold ? `<button class="btn small" id="mMold">🧁 Para mi molde</button>` : ""}<button class="btn small" data-spec="${d.id}">${recById(d.id) && recById(d.id).special ? "Quitar la marca de especial" : "🎉 Marcar como especial"}</button><button class="btn small" id="mPdf">PDF</button><button class="btn small" id="mEdit">Editar</button><button class="btn small" id="mClose">Cerrar</button></div>
       <div class="hint">${esc(d.cat)}${timeLabel(d) ? " · " + esc(timeLabel(d)) : ""}${(d.tags || []).length ? " · " + d.tags.map(esc).join(", ") : ""}${n ? ` · en el menú ${n} ${n === 1 ? "vez" : "veces"}` : ""}${(() => { const c = recipeCost(d, modal.people); return c.tot > 0 ? ` · <b>💲 aprox. ${money(c.tot)}</b> para ${modal.people}${c.miss ? ` (${c.miss} ingredientes sin precio)` : ""}` : ""; })()}${(() => { const x = lastMade()[d.id]; return x ? ` · <b>última vez: ${agoText(daysAgo(x.date))}</b> (${fmtDay(x.date)}, ${x.count} ${x.count === 1 ? "vez" : "veces"} en el historial)` : ""; })()}${d.link ? ` · <a href="${esc(d.link)}" target="_blank" rel="noopener">receta original</a>` : ""}</div>
       ${!isSide(d) && !d.special && state.recipes.some(isGuar) ? `<div class="sidepick"><label for="mSide">${pastaish(d) ? "🍝 Con salsa o guarnición" : "🥗 Con guarnición"}</label><select id="mSide">${sideOptions(d, modal.side, pastaish(d) ? "— sola —" : "— sin guarnición —")}</select>${recById(modal.side) ? `<span class="hint">Se suma a ingredientes, compras, modo cocina y PDF.</span>` : ""}</div>` : ""}
-      ${modal.fz ? `${d.fz && d.fz.can === false ? `<div class="err" style="margin:6px 0">Ojo: según su ficha, esta receta no conviene congelarla.</div>` : ""}<div class="saveform" style="margin:6px 0"><span>🧊 ¿Cuántas porciones congelaste?${d.fz && d.fz.can !== false ? ` <span class="hint">(dura ${fzMonths(d)} ${fzMonths(d) === 1 ? "mes" : "meses"})</span>` : ""}</span><input id="mFzN" type="number" min="1" step="1" value="${modal.vn || state.comensales}" style="max-width:80px"><button class="btn small primary" id="mFzSave">Guardar en el freezer</button></div>` : ""}
+      ${modal.fz ? `${d.fz && d.fz.can === false ? `<div class="err" style="margin:6px 0">Ojo: según su ficha, esta receta no conviene congelarla.</div>` : ""}<div class="saveform" style="margin:6px 0"><span>🧊 ${isMP(d) ? "¿Cuánto guardaste?" : "¿Cuántas porciones congelaste?"}${d.fz && d.fz.can !== false ? ` <span class="hint">(dura ${fzMonths(d)} ${fzMonths(d) === 1 ? "mes" : "meses"})</span>` : ""}</span><input id="mFzN" type="number" min="1" step="1" value="${isMP(d) ? mpQ(d) * modal.people / serves(d) : modal.vn || state.comensales}" style="max-width:80px">${isMP(d) ? `<span class="hint">${esc(d.mp.u)}</span>` : ""}<button class="btn small primary" id="mFzSave">Guardar en el freezer</button></div>` : ""}
       ${modal.vn ? `<div class="vbox" style="margin:6px 0">🍱 Cantidades para ${modal.people}: incluye ${modal.vn} ${modal.vn === 1 ? "porción" : "porciones"} para la vianda de mañana.</div>` : ""}
       ${d.note ? `<div class="autonote">${esc(d.note)}</div>` : ""}
       ${d.prev && d.prev.when ? `<div class="remind">⏰ ${d.prev.when === "noche" ? "La noche anterior" : "Unas horas antes"}: ${esc(d.prev.text)}</div>` : ""}
-      <div class="grid2"><div><h3>Ingredientes para ${modal.people}${modal.people !== serves(d) ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400">(la receta original es para ${serves(d)})</span>` : ""}</h3>${(() => { const parts = partsX(d, modal.people, modal.side); const own = `<div class="pre">${esc(ingLines(d, modal.people).filter(l => !/^1 masa de tarta|^\d+ masa de tarta/i.test(l)).map(l => "• " + l).join("\n")) || "—"}</div>`;
+      ${isMP(d) ? `<div class="mpinfo">🥫 <b>Meal prep</b> · rinde ${esc(mpYield(d, modal.people / serves(d)))}${modal.people !== serves(d) ? ` (${nfmt(modal.people / serves(d))} tandas)` : " por tanda"} · en el stock: <b>${nfmt(fzOf(d.id))} ${esc(d.mp.u)}</b> <button class="linkbtn" data-mpweek="${d.id}" style="color:var(--accent);text-decoration:underline">${state.preps.includes(d.id) ? "✓ está en esta semana" : "+ sumarla a esta semana"}</button></div>` : ""}
+      ${(() => { const u = mpUses(d); return u.length ? `<div class="mpinfo">${u.map(r => `🥫 Lleva <b>${esc(r.name.toLowerCase())}</b>: ${fzOf(r.id) > 0 ? `tenés ${nfmt(fzOf(r.id))} ${esc(r.mp.u)} en el stock` : `<b style="color:var(--warn)">no te queda</b> · <button class="linkbtn" data-mpweek="${r.id}" style="color:var(--accent);text-decoration:underline">hacer una tanda esta semana</button>`}`).join("<br>")}</div>` : ""; })()}
+      <div class="grid2"><div><h3>Ingredientes para ${isMP(d) ? (modal.people === serves(d) ? "1 tanda" : nfmt(modal.people / serves(d)) + " tandas") : modal.people}${!isMP(d) && modal.people !== serves(d) ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400">(la receta original es para ${serves(d)})</span>` : ""}</h3>${(() => { const parts = partsX(d, modal.people, modal.side); const own = `<div class="pre">${esc(ingLines(d, modal.people).filter(l => !/^1 masa de tarta|^\d+ masa de tarta/i.test(l)).map(l => "• " + l).join("\n")) || "—"}</div>`;
         return parts.length ? `<div class="hint" style="margin:4px 0 2px;font-weight:700">${esc(ownLabel(d))}</div>${own}` + parts.map(pt => `<div class="hint" style="margin:8px 0 2px;font-weight:700">${esc(pt.part)} · <button class="linkbtn" data-open="${pt.r.id}" data-people="${Math.round(pt.people * 10) / 10}" style="color:var(--accent);text-decoration:underline">ver «${esc(pt.r.name)}»</button></div><div class="pre">${esc(ingLines(pt.r, pt.people).map(l => "• " + l).join("\n"))}</div>`).join("") : own; })()}</div>
-      <div><div class="serv" style="justify-content:space-between;margin-bottom:4px"><h3>Para</h3><span style="display:flex;gap:6px;align-items:center"><button class="iconbtn" id="mPm" aria-label="Una porción menos">−</button><span class="num">${modal.people}</span><button class="iconbtn" id="mPp" aria-label="Una porción más">+</button><span class="hint">personas</span></span></div>
+      <div><div class="serv" style="justify-content:space-between;margin-bottom:4px"><h3>Para</h3><span style="display:flex;gap:6px;align-items:center"><button class="iconbtn" id="mPm" aria-label="Menos">−</button><span class="num">${isMP(d) ? nfmt(modal.people / serves(d)) : modal.people}</span><button class="iconbtn" id="mPp" aria-label="Más">+</button><span class="hint">${isMP(d) ? (modal.people === serves(d) ? "tanda" : "tandas") : "personas"}</span></span></div>
         ${modal.buy ? buyPanel(d) : `<div class="hint" style="margin-bottom:4px">Lista de compras · <button class="linkbtn" id="mBuy2" style="color:var(--accent);text-decoration:underline">comprar solo para esta receta</button></div><div class="pre">${(() => { const g = computeShopping(modalEntries(d, modal.people)); const all = SHOPS.flatMap(x => g[x] || []); return all.length ? all.map(x => "• " + x.p.name + ": " + x.qty).join("\n") : "Ningún ingrediente está vinculado a un producto: esta receta no suma a la lista."; })()}</div>${(d.parts || []).length ? `<div class="hint" style="margin-top:4px">Incluye ${esc(partsOf(d, modal.people).map(x => x.part.toLowerCase()).join(" y "))}.</div>` : ""}`}
-        ${modal.people !== serves(d) ? `<div class="hint" style="margin-top:4px">Ajustado de ${serves(d)} a ${modal.people} personas. Sal y condimentos: a gusto. Para comprar, se redondea para arriba.</div>` : ""}</div></div>
+        ${!isMP(d) && modal.people !== serves(d) ? `<div class="hint" style="margin-top:4px">Ajustado de ${serves(d)} a ${modal.people} personas. Sal y condimentos: a gusto. Para comprar, se redondea para arriba.</div>` : ""}</div></div>
       ${d.before ? `<div><h3>Antes de empezar</h3><div class="pre">${esc(d.before)}</div></div>` : ""}
       <div><h3>Preparación</h3><div class="pre">${esc(d.prep) || "—"}</div></div>
       ${d.serve ? `<div><h3>Para terminar y servir</h3><div class="pre">${esc(d.serve)}</div></div>` : ""}
@@ -2337,6 +2410,7 @@ function renderModal(){
       <div><h3 style="margin-bottom:6px">Etiquetas</h3><div class="tagpick">${state.tags.map(t => `<button class="chip tagchip" data-tagtoggle="${esc(t)}" aria-pressed="${(d.tags || []).includes(t)}">${esc(t)}</button>`).join("")}
         <input id="fTagNew" placeholder="+ nueva etiqueta" style="max-width:170px"><button class="btn small" id="addTag">Agregar</button></div></div>
       <div style="display:flex;gap:18px;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="fFav" style="width:auto"${d.fav ? " checked" : ""}> ★ Favorita</label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600" title="Se hace en tanda para guardar (caldos, salsas, cubitos…)"><input type="checkbox" id="fMp" style="width:auto"${d.mp ? " checked" : ""}> 🥫 Meal prep</label>
       ${isSide(d) ? "" : `<label style="display:flex;gap:8px;align-items:center;font-weight:600" title="Viaja bien y se recalienta: se puede cocinar de noche para el almuerzo del día siguiente"><input type="checkbox" id="fVianda" style="width:auto"${d.vianda !== false ? " checked" : ""}> 🍱 Va en vianda</label>`}
       <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="fSpec" style="width:auto"${d.special ? " checked" : ""}> Especial <span class="hint" style="font-weight:400">(se hace por fuera del menú semanal)</span></label></div>
       <div class="grid3" style="grid-template-columns:1fr 1fr 1fr;align-items:end"><label class="f">Molde de la receta <span class="hint" style="font-weight:400">(tartas, tortas, budines)</span><select id="fMoldF"><option value=""${!d.mold ? " selected" : ""}>— no usa molde —</option>${[["redondo","Redondo"],["cuadrado","Cuadrado"],["rect","Rectangular"]].map(([v, l]) => `<option value="${v}"${d.mold && d.mold.f === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
@@ -2364,6 +2438,7 @@ function renderModal(){
         <label class="f">Para terminar y servir<textarea id="fServe" rows="4">${esc(d.serve || "")}</textarea></label>
         <label class="f">Línea de tiempo<textarea id="fTimeline" rows="4">${esc(d.timeline || "")}</textarea></label>
         <label class="f">Tips<textarea id="fTips" rows="4">${esc(d.tips || "")}</textarea></label></div></details>
+      <div class="mpform" id="mpForm"${d.mp ? "" : ` style="display:none"`}><span class="hint" style="font-weight:600">🥫 Cada tanda rinde</span><input id="fMpQ" type="number" min="0.5" step="0.5" value="${d.mp ? mpQ(d) : ""}" placeholder="6" aria-label="Cantidad"><input id="fMpU" list="mpUnits" value="${esc((d.mp && d.mp.u) || "")}" placeholder="frascos, cubitos, porciones…" aria-label="Unidad"><datalist id="mpUnits"><option value="frascos"><option value="cubitos"><option value="porciones"><option value="potes"><option value="litros"><option value="bolsitas"></datalist><span class="hint">Avisar cuando queden</span><input id="fMpMin" type="number" min="0" step="1" value="${d.mp && d.mp.min ? d.mp.min : ""}" placeholder="${d.mp ? mpMin(d) : 2}" aria-label="Mínimo"><span class="hint">o menos</span></div>
       <details${d.fz ? " open" : ""}><summary class="hint" style="cursor:pointer;font-weight:600">🧊 Ficha de freezer</summary>
         <div class="fzform"><label class="vchk"><input type="checkbox" id="fFzCan"${!d.fz || d.fz.can !== false ? " checked" : ""}> Se puede congelar</label>
         <label class="f">Dura (meses)<input id="fFzM" type="number" min="1" max="12" step="1" value="${d.fz && d.fz.m ? d.fz.m : ""}" placeholder="3"></label>
@@ -2383,7 +2458,8 @@ function readDraft(){
   if (v("fName") !== undefined) { d.name = v("fName").trim(); d.cat = v("fCat"); if (v("fNewCat") !== undefined) d.newCat = v("fNewCat"); d.note = v("fNote"); d.prep = v("fPrep");
     const num = x => x === "" || x === undefined ? null : Math.max(0, Number(x)) || null;
     d.tTotal = num(v("fTT")); d.tActive = num(v("fTA")); d.tNote = (v("fTN") || "").trim().replace(/^\+\s*/, "");
-    d.prev = {when: v("fPW") || "", text: (v("fPT") || "").trim()}; d.link = v("fLink").trim(); d.fav = !!document.getElementById("fFav")?.checked; if (document.getElementById("fVianda")) d.vianda = document.getElementById("fVianda").checked; if (document.querySelector(".fSide")) d.sides = [...document.querySelectorAll(".fSide:checked")].map(x => x.value); { const pr = v("fPart"); d.parts = pr ? [{rid: pr, label: /masa/i.test((recById(pr) || {}).name || "") ? "Masa" : (recById(pr) || {}).name}] : []; } { const mf = v("fMoldF"), mx = Number(v("fMoldX")), my = Number(v("fMoldY")); d.mold = mf && mx > 0 ? {f: mf, x: mx, y: mf === "rect" ? (my || mx) : null} : null; } d.special = !!document.getElementById("fSpec")?.checked; if (d.special) spOf(d);
+    d.prev = {when: v("fPW") || "", text: (v("fPT") || "").trim()}; d.link = v("fLink").trim(); d.fav = !!document.getElementById("fFav")?.checked; if (document.getElementById("fMp")) { if (document.getElementById("fMp").checked) d.mp = {q: Number(v("fMpQ")) || serves(d), u: (v("fMpU") || "porciones").trim(), ...(Number(v("fMpMin")) > 0 ? {min: Number(v("fMpMin"))} : {})}; else delete d.mp; }
+    if (document.getElementById("fVianda")) d.vianda = document.getElementById("fVianda").checked; if (document.querySelector(".fSide")) d.sides = [...document.querySelectorAll(".fSide:checked")].map(x => x.value); { const pr = v("fPart"); d.parts = pr ? [{rid: pr, label: /masa/i.test((recById(pr) || {}).name || "") ? "Masa" : (recById(pr) || {}).name}] : []; } { const mf = v("fMoldF"), mx = Number(v("fMoldX")), my = Number(v("fMoldY")); d.mold = mf && mx > 0 ? {f: mf, x: mx, y: mf === "rect" ? (my || mx) : null} : null; } d.special = !!document.getElementById("fSpec")?.checked; if (d.special) spOf(d);
     d.serves = Math.max(1, Math.round(Number(v("fServes")) || 3)); d.before = v("fBefore") || ""; d.serve = v("fServe") || ""; d.timeline = v("fTimeline") || ""; d.tips = v("fTips") || "";
     if (document.getElementById("fFzCan")) { const can = document.getElementById("fFzCan").checked, m = Math.round(Number(v("fFzM")) || 0), th = v("fFzThaw") || "", re = (v("fFzRe") || "").trim(), nt = (v("fFzNote") || "").trim();
       d.fz = (!can || m || th || re || nt || d.fz) ? {can, m: m || null, thaw: th, re, note: nt} : undefined; if (!d.fz) delete d.fz; } }
@@ -2966,7 +3042,7 @@ async function exportPDF(){
     y = doc.lastAutoTable.finalY + 8;
     const preps = state.preps.filter(Boolean);
     if (preps.length) {
-      doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...PDFC.MUTED); doc.text("PARA TENER LISTO ESTA SEMANA", M, y); y += 5;
+      doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...PDFC.MUTED); doc.text("MEAL PREP DE LA SEMANA", M, y); y += 5;
       doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...PDFC.INK);
       preps.forEach(p => { doc.text("- " + L1(nm(p)), M, y); y += 5; });
     }
@@ -3335,7 +3411,7 @@ function renderCookInner(){
     const cparts = partsX(r, cook.people, cook.side), grp = pt => [pt.part + " · " + pt.r.name, ingLines(pt.r, pt.people)];
     const groups = cparts.length ? [...cparts.filter(x => !x.after).map(grp), [ownLabel(r), ingLines(r, cook.people)], ...cparts.filter(x => x.after).map(grp)] : [["", ingLines(r, cook.people)]];
     const lines = groups.flatMap(g => g[1]); let k0 = 0;
-    body = `<div class="ck-kicker">Ingredientes para ${cook.people} ${cook.people === 1 ? "persona" : "personas"}${cook.vn ? ` (incluye ${cook.vn} de vianda)` : ""}</div>
+    body = `<div class="ck-kicker">Ingredientes para ${isMP(r) ? (cook.people === serves(r) ? "1 tanda" : nfmt(cook.people / serves(r)) + " tandas") + " · rinde " + esc(mpYield(r, cook.people / serves(r))) : cook.people + " " + (cook.people === 1 ? "persona" : "personas")}${cook.vn ? ` (incluye ${cook.vn} de vianda)` : ""}</div>
       <div class="ck-ppl"><button class="iconbtn" id="ckPm" aria-label="Una persona menos">−</button><b>${cook.people}</b><button class="iconbtn" id="ckPp" aria-label="Una persona más">+</button><span class="hint">personas</span></div>
       ${groups.map(([gname, ls]) => { const html = `${gname ? `<div class="ck-sub">${esc(gname)}</div>` : ""}<ul class="ck-ing">${ls.map((l, j) => { const k = k0 + j; return `<li><label><input type="checkbox" data-ckc="${k}"${cook.checks.has(k) ? " checked" : ""}> <span>${esc(l)}</span></label></li>`; }).join("")}</ul>`; k0 += ls.length; return html; }).join("")}
       <div class="hint">Tildá lo que ya tenés separado. ${cook.checks.size}/${lines.length}</div>`;
@@ -3480,7 +3556,7 @@ document.addEventListener("click", async e => {
     if (i >= 0) { state.extra.splice(i, 1); toast("Ya no se suma a la semana"); } else { state.extra.push({rid: id, people: modal.people}); if (recById(modal.side)) state.extra.push({rid: modal.side, people: modal.people}); toast("Sumada a la compra de la semana (" + modal.people + " personas)"); }
     save(); render(); return renderModal(); }
   if (t.dataset.rmextra !== undefined) { state.extra.splice(+t.dataset.rmextra, 1); save(); toast("Quitada de la compra"); return render(); }
-  if (t.id === "mPm" || t.id === "mPp") { modal.people = Math.min(200, Math.max(1, modal.people + (t.id === "mPp" ? 1 : -1))); return renderModal(); }
+  if (t.id === "mPm" || t.id === "mPp") { const st = isMP(modal.draft) ? serves(modal.draft) : 1; modal.people = Math.min(200 * st, Math.max(st, modal.people + (t.id === "mPp" ? st : -st))); return renderModal(); }
   if (t.dataset.spec) { toggleSpecial(t.dataset.spec); return; }
   if (t.dataset.spsel) { spSel = t.dataset.spsel; return render(); }
   if (t.dataset.spcook) { openCook(t.dataset.spcook, spOf(recById(t.dataset.spcook)).people); return; }
@@ -3538,6 +3614,10 @@ document.addEventListener("click", async e => {
   if (t.id === "planFav" || t.id === "planRecent" || t.id === "planQuick") { const k = {planFav:"fav", planRecent:"recent", planQuick:"quick"}[t.id]; state.planner[k] = !state.planner[k]; save(); return render(); }
   if (t.dataset.plantag) { const o = state.planner, x = t.dataset.plantag; o.tags = o.tags.includes(x) ? o.tags.filter(y => y !== x) : [...o.tags, x]; save(); return render(); }
   if (t.dataset.fz) { const [i, f] = t.dataset.fz.split(":"); const d = state.days[+i]; d[f + "Fz"] = !d[f + "Fz"]; save(); render(); toast(d[f + "Fz"] ? "Sale del freezer: no se compra" : "Se cocina: vuelve a la lista de compras"); return; }
+  if (t.dataset.mptan) { const [id, k] = t.dataset.mptan.split(":"); state.prepTandas[id] = Math.max(1, Math.min(20, (state.prepTandas[id] || 1) + Number(k))); save(); return render(); }
+  if (t.dataset.mpdone) { const id = t.dataset.mpdone, r = recById(id), tt = state.prepTandas[id] || 1; fzAddUnits(id, mpQ(r) * tt, r.mp.u); state.prepDone[id] = true; save(); render(); toast(`🥫 Al stock: ${mpYield(r, tt)} de ${r.name.toLowerCase()}`); return; }
+  if (t.dataset.mpweek) { const id = t.dataset.mpweek; if (!state.preps.includes(id)) state.preps.push(id); delete state.prepDone[id]; save(); render(); toast("Sumado al meal prep de la semana: " + recById(id).name); return; }
+  if (t.dataset.mpst) { const [id, k] = t.dataset.mpst.split(":"), r = recById(id); if (+k > 0) fzAddUnits(id, 1, r.mp.u); else if (fzOf(id) > 0) fzTake(id, 1); save(); return render(); }
   if (t.id === "fzAddOpen") { fzAdd = !fzAdd; return render(); }
   if (t.id === "fzSave") { const rid = $("#fzRec").value, nm = ($("#fzName").value || "").trim(), n = Math.round(Number($("#fzN").value) || 0);
     if (!rid || (rid === "__otro" && !nm) || n < 1) { toast("Elegí qué es y cuántas porciones"); return; }
@@ -3546,7 +3626,7 @@ document.addEventListener("click", async e => {
   if (t.dataset.fzdel) { state.freezer = state.freezer.filter(y => y.id !== t.dataset.fzdel); save(); render(); toast("Quitado del freezer"); return; }
   if (t.id === "mFz") { modal.fz = !modal.fz; return renderModal(); }
   if (t.id === "mFzSave") { const n = Math.round(Number($("#mFzN").value) || 0); if (n < 1) return toast("Poné cuántas porciones");
-    state.freezer.push({id: newId("f", state.freezer), rid: modal.draft.id, name: "", n, date: isoDate(new Date())}); modal.fz = false; save(); render(); renderModal(); toast(`🧊 ${n} ${n === 1 ? "porción" : "porciones"} al freezer`); return; }
+    fzAddUnits(modal.draft.id, n, isMP(modal.draft) ? modal.draft.mp.u : ""); modal.fz = false; save(); render(); renderModal(); toast(`🧊 ${n} ${n === 1 ? "porción" : "porciones"} al freezer`); return; }
   if (t.id === "planTpl") { state.planner.useTpl = !state.planner.useTpl; save(); return render(); }
   if (t.id === "tplEdit" || t.id === "tplDone") { tplOpen = t.id === "tplEdit" ? !tplOpen : false; if (t.id === "tplDone") { state.planner.useTpl = true; save(); } return render(); }
   if (t.id === "tplWeekdays") { state.weekTpl.vianda = DAYS.map((_, i) => i < 5); state.planner.useTpl = true; save(); toast("Lunes a viernes: el almuerzo sale de la cena anterior"); return render(); }
@@ -3590,7 +3670,7 @@ document.addEventListener("click", async e => {
   if (t.id === "clearWeek") { savedConfirm = {kind:"clear"}; return render(); }
   if (t.id === "clearYes") { applySaved({days:[], preps:[]}); savedConfirm = null; save(); render(); toast("Semana vacía"); return; }
   if (t.id === "confNo") { savedConfirm = null; return render(); }
-  if (t.dataset.prepdel !== undefined) { const live = state.preps.filter(id => recById(id)); const id = live[+t.dataset.prepdel]; state.preps = state.preps.filter(x => x !== id); save(); return render(); }
+  if (t.dataset.prepdel !== undefined) { const live = state.preps.filter(id => recById(id)); const id = live[+t.dataset.prepdel]; state.preps = state.preps.filter(x => x !== id); delete state.prepTandas[id]; delete state.prepDone[id]; save(); return render(); }
   if (t.dataset.load) { if (weekIsEmpty()) { applySaved(state.saved.find(m => m.id === t.dataset.load)); save(); render(); window.scrollTo(0,0); toast("Menú cargado"); } else { savedConfirm = {id:t.dataset.load, kind:"load"}; render(); } return; }
   if (t.dataset.loadyes) { applySaved(state.saved.find(m => m.id === t.dataset.loadyes)); savedConfirm = null; save(); render(); window.scrollTo(0,0); toast("Menú cargado"); return; }
   if (t.dataset.overwrite) { const m = state.saved.find(x => x.id === t.dataset.overwrite); Object.assign(m, snapshotWeek(), {savedAt: Date.now()}); save(); render(); toast("«" + m.name + "» actualizado"); return; }
@@ -3676,6 +3756,7 @@ document.addEventListener("change", e => {
     else if (f === "q") x.q = Math.max(0, Number(String(t.value).replace(",", ".")) || 0);
     else if (f === "days") x.days = Number(t.value) || 7; else x[f] = t.value;
     save(); render(); return; }
+  if (t.id === "fMp") { const f = $("#mpForm"); if (f) f.style.display = t.checked ? "" : "none"; return; }
   if (t.id === "fzRec") { const o = $("#fzName"); if (o) o.style.display = t.value === "__otro" ? "" : "none"; return; }
   if (t.dataset.tplrule) { const [i, k] = t.dataset.tplrule.split(":").map(Number); state.weekTpl.rules[i][k] = t.value; save(); return render(); }
   if (t.dataset.tplv !== undefined) { state.weekTpl.vianda[+t.dataset.tplv] = t.checked; save(); return render(); }
