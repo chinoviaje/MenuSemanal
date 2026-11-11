@@ -1028,7 +1028,7 @@ const nfmt = n => String(Math.round(n * 10) / 10).replace(".", ",");
 const mpYield = (r, t) => nfmt(mpQ(r) * (t || 1)) + " " + ((r.mp && r.mp.u) || "porciones");
 const mpMin = r => Number(r.mp && r.mp.min) || Math.max(1, Math.ceil(mpQ(r) / 3));
 function mpStatus(r){ const n = fzOf(r.id); return n <= 0 ? "out" : n <= mpMin(r) ? "low" : "ok"; }
-const mpAlert = r => { const st = mpStatus(r); return st === "low" || (st === "out" && !!(state.mpSeen || {})[r.id]); }; // avisa si se está terminando (o se terminó algo que tenías)
+const mpAlert = r => false; // sin aviso de «se está terminando»: lo que hay dura mucho // avisa si se está terminando (o se terminó algo que tenías)
 const mpKw = r => (r.mp && r.mp.kw) || r.name.toLowerCase().replace(/\(.*?\)/g, "").replace(/\bcaser[oa]s?\b/g, "").replace(/\s+/g, " ").trim();
 function mpUses(d){ // preparaciones de meal prep que lleva esta receta
   const rows = (d.rows || []).map(x => (x.name || "").toLowerCase());
