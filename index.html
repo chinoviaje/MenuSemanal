@@ -3684,7 +3684,7 @@ function planDocHTML(){
   const rem = weekReminders().flatMap((l, i) => l.map(x => `<li><b>${DAYS[i]}:</b> ${esc(x.text)}</li>`));
   const preps = state.preps.map(recById).filter(Boolean);
   const fzUse = state.days.flatMap((d, i) => ["lunch", "dinner"].filter(f => d[f + "Fz"] && recById(d[f]) && !(f === "lunch" && d.vianda)).map(f => `<li>${DAYS[i]}: ${esc(recById(d[f]).name)} (${slotPeople(i, f)} porc.)</li>`));
-  const boxes = [rem.length ? `<div class="box amber"><h4>No te olvides</h4><ul>${rem.join("")}</ul></div>` : "",
+  const boxes = [rem.length ? `<div class="box amber wide"><h4>No te olvides</h4><ul class="cols">${rem.join("")}</ul></div>` : "",
     preps.length ? `<div class="box blue"><h4>Meal prep de la semana</h4><ul>${preps.map(r => `<li>${esc(r.name)}${isMP(r) ? ` · ${(state.prepTandas[r.id] || 1)} ${(state.prepTandas[r.id] || 1) === 1 ? "tanda" : "tandas"} (rinde ${esc(mpYield(r, state.prepTandas[r.id] || 1))})` : ""}</li>`).join("")}</ul></div>` : "",
     fzUse.length ? `<div class="box teal"><h4>Sale del freezer</h4><ul>${fzUse.join("")}</ul></div>` : ""].filter(Boolean);
   const snacks = MEALS.map(([m, label]) => { const xs = state.snacks.filter(x => x.meal === m && prodById(x.p)); return xs.length ? `<b>${esc(label.replace(/^\S+\s/, ""))}:</b> ${xs.map(x => `${esc(prodById(x.p).name.toLowerCase())} (${esc(fmtQty(snackTotal(x), prodById(x.p)))})`).join(", ")}` : ""; }).filter(Boolean);
@@ -3714,7 +3714,7 @@ function planDocHTML(){
     .sub{color:#62707E;margin:4px 0 0}
     h2{font-size:17pt;font-weight:600;color:#2E5A86;border-bottom:1.5px solid #3D6E9E;padding-bottom:5px;margin:22px 0 10px}
     .boxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
-    .box{border-radius:8px;padding:10px 12px;border-left:3px solid}.box h4{font-size:10.5pt;margin-bottom:4px}.box ul{margin:0;padding-left:16px}.box li{margin:2px 0}
+    .box{border-radius:8px;padding:10px 12px;border-left:3px solid}.box.wide{grid-column:1/-1}.cols{columns:2;column-gap:8mm}.cols li{break-inside:avoid}.box h4{font-size:10.5pt;margin-bottom:4px}.box ul{margin:0;padding-left:16px}.box li{margin:2px 0}
     .amber{background:#FBF4E6;border-color:#C98A2E}.amber h4{color:#8A5A12}.blue{background:#EAF1F8;border-color:#3D6E9E}.blue h4{color:#2E5A86}.teal{background:#E6F3F1;border-color:#2B6F6A}.teal h4{color:#2B6F6A}
     table{width:100%;border-collapse:collapse;font-size:10pt}th{background:#3D6E9E;color:#fff;text-align:left;font-weight:600;padding:7px 9px}th:first-child{border-radius:6px 0 0 0}th:last-child{border-radius:0 6px 0 0}
     td{padding:7px 9px;border-bottom:1px solid #DEE5EC;vertical-align:top}tr:nth-child(even) td{background:#F5F8FB}td.d{font-weight:700;color:#2E5A86;width:22mm}
@@ -3738,11 +3738,11 @@ function planDocHTML(){
     <div class="pg">
     <div class="kick">PLAN DE LA SEMANA · DEL ${fmtD(mon).toUpperCase()} AL ${fmtD(sun).toUpperCase()}</div>
     <h1>Menú de la Casa</h1><p class="sub">Para ${state.comensales} ${state.comensales === 1 ? "persona" : "personas"}${state.days.some(d => d.vianda) ? ` · con vianda (${viandaN()} ${viandaN() === 1 ? "porción" : "porciones"})` : ""}. Los platos con <span class="rb">R</span> tienen la receta más adelante.</p>
-    ${boxes.length ? `<div class="boxes">${boxes.join("")}</div>` : ""}
+    ${boxes.filter(b => / wide/.test(b)).map(b => `<div class="boxes">${b}</div>`).join("")}${boxes.filter(b => !/ wide/.test(b)).length ? `<div class="boxes">${boxes.filter(b => !/ wide/.test(b)).join("")}</div>` : ""}
     <h2>Menú de la semana</h2>
     <table><thead><tr><th>Día</th><th>Almuerzo</th><th>Cena</th></tr></thead><tbody>${state.days.map((d, i) => `<tr><td class="d">${esc(d.day)}</td><td>${meal(i, "lunch")}</td><td>${meal(i, "dinner")}</td></tr>`).join("")}</tbody></table>
     ${snacks.length ? `<div class="sns"><h4>Desayunos, meriendas y colaciones de la semana</h4><p>${snacks.join(" · ")}</p></div>` : ""}
-    <h2>Lista de compras</h2>
+    <h2 class="brk">Lista de compras</h2>
     <p class="note">Para ${state.comensales} ${state.comensales === 1 ? "persona" : "personas"}, ya descontado lo que tenés en casa${cs.n ? ` · estimado en Jumbo: ${money(cs.tot)}` : ""}.</p>
     <div class="shop">${shops.map(([sh, xs]) => `<div class="sh"><h4>${esc(sh)}</h4><ul class="ck">${xs.map(x => `<li><span>${esc(x.p.name)}: <b>${esc(x.qty)}</b>${packDesc(x.p) ? ` <small>(${esc(packDesc(x.p))})</small>` : ""}</span></li>`).join("")}</ul></div>`).join("")}
       ${fijos.length ? `<div class="sh"><h4>Fijos de la semana</h4><ul class="ck">${fijos.map(f => `<li><span>${esc(f.name)}: <b>${esc(fijoText(f))}</b></span></li>`).join("")}</ul></div>` : ""}</div>
