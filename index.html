@@ -4236,7 +4236,12 @@ document.addEventListener("change", e => {
   if (t.dataset.tplrule) { const [i, k] = t.dataset.tplrule.split(":").map(Number); state.weekTpl.rules[i][k] = t.value; save(); return render(); }
   if (t.dataset.tplv !== undefined) { state.weekTpl.vianda[+t.dataset.tplv] = t.checked; save(); return render(); }
   if (t.id === "mSide" && modal) { modal.side = t.value || null; modal.checked = {}; return renderModal(); }
-  if (t.dataset.day !== undefined) { const d = state.days[+t.dataset.day], f = t.dataset.field; d[f] = t.value || null; if (f === "lunch" || f === "dinner") { d[f + "Fz"] = false; d[f + "Have"] = false; } save(); render(); return; }
+  if (t.dataset.day !== undefined) { const d = state.days[+t.dataset.day], f = t.dataset.field; d[f] = t.value || null; if (f === "lunch" || f === "dinner") { d[f + "Fz"] = false; d[f + "Have"] = false;
+      /* la guarnición acompaña al plato: si sacás el plato se va con él; si lo cambiás y no le va, se elige otra */
+      const r = recById(d[f]), sd = recById(d[f + "Salsa"]);
+      if (!r) d[f + "Salsa"] = null;
+      else if (!sd || !((r.sides || []).includes(sd.id) || (wantsSalsa(r) && sd.cat === "Salsa"))) d[f + "Salsa"] = autoSide(+t.dataset.day, f, r); }
+    save(); render(); return; }
   if (t.id === "prepAdd") { if (t.value && !state.preps.includes(t.value)) { state.preps.push(t.value); save(); toast("Agregado: " + recById(t.value).name); } render(); return; }
   if (t.dataset.check !== undefined) {
     const sc = t.dataset.scope || "week";
