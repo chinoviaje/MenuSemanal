@@ -1346,12 +1346,13 @@ function migrateUserRecipes(s){
     if (fm && Array.isArray(fm.rows)) { fm.rows = fm.rows.filter(x => !/^Puré o ensalada$/i.test(x.name) && !(x.name === "papa" && x.q === 600)); fm.prep = (fm.prep || "").replace(/\n3\. Servir con puré o ensalada\.?/, ""); }
   }
   if (s.migUser < 15) { // en la verdulería se compra por kilo o por cabeza, aunque la receta diga «2 cebollas»
-    const SELL = {"Cebolla": {u: "kg", w: 150}, "Zanahoria": {u: "kg", w: 120}, "Zapallito": {u: "kg", w: 250}, "Ajo": {u: "cabeza", n: 10}};
+    const SELL = {"Cebolla": {u: "kg", w: 150}, "Zanahoria": {u: "kg", w: 120}, "Zapallito": {u: "kg", w: 170}, "Ajo": {u: "cabeza", n: 10}};
     for (const p of s.products || []) if (SELL[p.name] && !p.sell) p.sell = SELL[p.name];
   }
   if (s.migUser < 16) { const SELL = {"Tomate": {u: "kg", w: 150}, "Berenjena": {u: "kg", w: 300}};
     for (const p of s.products || []) if (SELL[p.name] && !p.sell) p.sell = SELL[p.name]; }
-  s.migUser = 16;
+  if (s.migUser < 17) { const z = (s.products || []).find(p => p.name === "Zapallito"); if (z && z.sell && z.sell.w === 250) z.sell.w = 170; }
+  s.migUser = 17;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
