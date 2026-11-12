@@ -1,14 +1,22 @@
 // Menú de la Casa: guarda la base en Upstash Redis (Vercel Marketplace). Sin dependencias.
+// Perfiles: cada persona entra con su propia clave y tiene su propia base.
+//   La clave MENU_CLAVE es la del perfil principal (la dueña): su base sigue en menu:rev / menu:base, y es la única que maneja perfiles.
 // GET  /api/base?ping=1            -> {"app":"menu-de-la-casa"}   (sin clave)
-// GET  /api/base                   -> {"rev":N,"savedAt":T,"state":{...}}   (header X-Menu-Key)
+// GET  /api/base                   -> {"perfil":"…","admin":bool,"rev":N,"savedAt":T,"state":{...}}   (header X-Menu-Key)
 // GET  /api/base?since=N           -> {"rev":N,"same":true} si no cambió
 // PUT  /api/base {state, baseRev}  -> {"rev":N+1} | 409 con la versión actual si otro dispositivo guardó antes
+// Solo con la clave principal:
+// GET  /api/base?perfiles=1                       -> {"perfiles":[{id,name,created}]}
+// POST /api/base?accion=crear  {name, clave}      -> {"ok":true,"id":…}
+// POST /api/base?accion=clave  {id, clave}        -> {"ok":true}
+// POST /api/base?accion=borrar {id}               -> {"ok":true}
 const crypto = require("crypto");
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const CLAVE = process.env.MENU_CLAVE || "";
-const K_REV = "menu:rev", K_DOC = "menu:base", COPIAS_DIAS = 30;
+const K_PERFILES = "menu:perfiles", K_CLAVES = "menu:claves", COPIAS_DIAS = 30;
+const pre = id => id ? "menu:p:" + id + ":" : "menu:"; // el perfil principal usa las llaves de siempre
 
 async function redis(cmd){
   const r = await fetch(URL_, {method: "POST", headers: {Authorization: "Bearer " + TOKEN, "Content-Type": "application/json"}, body: JSON.stringify(cmd)});
@@ -27,30 +35,92 @@ redis.call('SET', KEYS[2], '{"rev":' .. nrev .. ',"savedAt":' .. ARGV[3] .. ',"s
 redis.call('SET', KEYS[1], nrev)
 return {1, nrev}`;
 
+const sha = s => crypto.createHash("sha256").update("menu-de-la-casa:" + String(s)).digest("hex");
 const same = (a, b) => { const x = crypto.createHash("sha256").update(String(a)).digest(), y = crypto.createHash("sha256").update(String(b)).digest(); return crypto.timingSafeEqual(x, y); };
 const send = (res, code, data) => { res.statusCode = code; res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); res.end(typeof data === "string" ? data : JSON.stringify(data)); };
+const bodyOf = req => { let b = req.body; if (typeof b === "string") { try { b = JSON.parse(b); } catch (e) { b = null; } } return b && typeof b === "object" ? b : {}; };
+
+async function quien(key){ // → {id, name, admin} o null
+  if (!key) return null;
+  if (same(key, CLAVE)) return {id: "", name: "", admin: true};
+  const id = await redis(["HGET", K_CLAVES, sha(key)]);
+  if (!id) return null;
+  const p = await redis(["HGET", K_PERFILES, id]);
+  if (!p) return null;
+  let o = {}; try { o = JSON.parse(p); } catch (e) {}
+  return {id, name: o.name || id, admin: false};
+}
+async function perfiles(){
+  const flat = await redis(["HGETALL", K_PERFILES]) || [], out = [];
+  for (let i = 0; i < flat.length; i += 2) { let o = {}; try { o = JSON.parse(flat[i + 1]); } catch (e) {} out.push({id: flat[i], name: o.name || flat[i], created: o.created || 0, h: o.h}); }
+  return out.sort((a, b) => a.created - b.created);
+}
+async function claveLibre(clave, salvo){
+  if (same(clave, CLAVE)) return false;
+  const id = await redis(["HGET", K_CLAVES, sha(clave)]);
+  return !id || id === salvo;
+}
 
 module.exports = async (req, res) => {
   const q = req.query || Object.fromEntries(new URL(req.url, "http://x").searchParams);
-  if (req.method === "GET" && q.ping) return send(res, 200, {app: "menu-de-la-casa", ok: true});
+  if (req.method === "GET" && q.ping) return send(res, 200, {app: "menu-de-la-casa", ok: true, perfiles: true});
   if (!URL_ || !TOKEN) return send(res, 500, {error: "Falta conectar la base Redis (Storage → Upstash) y volver a publicar"});
   if (!CLAVE) return send(res, 500, {error: "Falta la variable MENU_CLAVE en Vercel"});
-  if (!same(req.headers["x-menu-key"] || "", CLAVE)) { await new Promise(r => setTimeout(r, 500)); return send(res, 401, {error: "Clave incorrecta"}); }
   try {
+    const yo = await quien(req.headers["x-menu-key"] || "");
+    if (!yo) { await new Promise(r => setTimeout(r, 500)); return send(res, 401, {error: "Clave incorrecta"}); }
+    const P = pre(yo.id), K_REV = P + "rev", K_DOC = P + "base";
+
+    // ---- perfiles (solo la clave principal) ----
+    if (q.perfiles || q.accion) {
+      if (!yo.admin) return send(res, 403, {error: "Solo el perfil principal puede manejar perfiles"});
+      if (req.method === "GET") return send(res, 200, {perfiles: (await perfiles()).map(({id, name, created}) => ({id, name, created}))});
+      const b = bodyOf(req), name = String(b.name || "").trim().slice(0, 40), clave = String(b.clave || "").trim();
+      if (q.accion === "crear") {
+        if (!name) return send(res, 400, {error: "Poné un nombre"});
+        if (clave.length < 4) return send(res, 400, {error: "La clave tiene que tener al menos 4 letras o números"});
+        if (!(await claveLibre(clave))) return send(res, 400, {error: "Esa clave ya la usa otro perfil: elegí otra"});
+        const id = (name.normalize("NFD").replace(/[^\w]+/g, "").toLowerCase().slice(0, 16) || "perfil") + "-" + crypto.randomBytes(3).toString("hex");
+        const h = sha(clave);
+        await redis(["HSET", K_PERFILES, id, JSON.stringify({name, created: Date.now(), h})]);
+        await redis(["HSET", K_CLAVES, h, id]);
+        return send(res, 200, {ok: true, id});
+      }
+      const all = await perfiles(), p = all.find(x => x.id === String(b.id || ""));
+      if (!p) return send(res, 404, {error: "Ese perfil no existe"});
+      if (q.accion === "clave") {
+        if (clave.length < 4) return send(res, 400, {error: "La clave tiene que tener al menos 4 letras o números"});
+        if (!(await claveLibre(clave, p.id))) return send(res, 400, {error: "Esa clave ya la usa otro perfil: elegí otra"});
+        const h = sha(clave);
+        if (p.h) await redis(["HDEL", K_CLAVES, p.h]);
+        await redis(["HSET", K_CLAVES, h, p.id]);
+        await redis(["HSET", K_PERFILES, p.id, JSON.stringify({name: p.name, created: p.created, h})]);
+        return send(res, 200, {ok: true});
+      }
+      if (q.accion === "borrar") {
+        if (p.h) await redis(["HDEL", K_CLAVES, p.h]);
+        await redis(["HDEL", K_PERFILES, p.id]);
+        await redis(["DEL", pre(p.id) + "rev", pre(p.id) + "base"]);
+        return send(res, 200, {ok: true});
+      }
+      return send(res, 400, {error: "Acción desconocida"});
+    }
+
+    // ---- la base del perfil ----
     if (req.method === "GET") {
       if (q.since !== undefined) { const rev = Number(await redis(["GET", K_REV]) || 0); if (rev === Number(q.since)) return send(res, 200, {rev, same: true}); }
       const doc = await redis(["GET", K_DOC]);
-      return send(res, 200, doc || {rev: 0, state: null});
+      const head = '{"perfil":' + JSON.stringify(yo.id) + ',"perfilName":' + JSON.stringify(yo.name) + ',"admin":' + yo.admin;
+      return send(res, 200, doc ? head + "," + doc.slice(1) : head + ',"rev":0,"state":null}');
     }
     if (req.method === "PUT" || req.method === "POST") {
-      let body = req.body;
-      if (typeof body === "string") body = JSON.parse(body);
-      if (!body || typeof body.state !== "object" || body.state === null || Array.isArray(body.state)) return send(res, 400, {error: "Formato inválido"});
+      const body = bodyOf(req);
+      if (typeof body.state !== "object" || body.state === null || Array.isArray(body.state)) return send(res, 400, {error: "Formato inválido"});
       const st = JSON.stringify(body.state);
       const base = body.baseRev === null || body.baseRev === undefined ? "" : String(Number(body.baseRev));
       const day = new Date().toISOString().slice(0, 10);
       const now = Math.floor(Date.now() / 1000);
-      const [ok, rev] = await redis(["EVAL", SAVE, "3", K_REV, K_DOC, "menu:copia:" + day, base, st, String(now), String(COPIAS_DIAS * 86400)]);
+      const [ok, rev] = await redis(["EVAL", SAVE, "3", K_REV, K_DOC, P + "copia:" + day, base, st, String(now), String(COPIAS_DIAS * 86400)]);
       if (!ok) return send(res, 409, await redis(["GET", K_DOC]));
       return send(res, 200, {rev, savedAt: now});
     }
