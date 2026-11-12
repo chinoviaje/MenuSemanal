@@ -495,7 +495,6 @@ select,input,textarea{border-radius:10px}
 .mpstock{margin-top:4px}
 /* recetas */
 .rsearch input{font-size:1rem;padding:12px 14px;border-radius:14px}
-.plist{display:grid;gap:8px;margin:10px 0}.prow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}.prow b{flex:1;min-width:120px}
 .calcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:24px}
 .calccard{display:flex;gap:12px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;font:inherit;color:inherit;position:relative}
 .calccard:hover{border-color:var(--accent)}.calccard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -751,7 +750,7 @@ function migrate(s){
     s.mig = 3;
   }
 }
-function setStatus(t){ $("#status").textContent = (srv && srv.perfil ? "👤 " + srv.perfilName + " · " : "") + t; }
+function setStatus(t){ $("#status").textContent = t; }
 function save(){
   state.updatedAt = Date.now();
   const okLocal = lsSet(LS_KEY, JSON.stringify(state));
@@ -856,7 +855,7 @@ async function initFileBase(){
   render();
 }
 function baseBar(){
-  if (srv) return `<div class="basebar ok"><div><b>${srv.offline ? "⚠ Sin conexión con el servidor" : "✓ Tu base está en el servidor"}</b><div class="hint">${srv.offline ? "Los cambios quedan en este dispositivo y se suben solos cuando vuelve la conexión." : "Cada cambio se guarda ahí: la ves igual en la compu y en el celular. El servidor guarda además una copia por día."}</div></div><button class="btn small" id="srvSync">Sincronizar ahora</button><button class="btn small" id="srvLogout">Salir / cambiar de perfil</button></div>`;
+  if (srv) return `<div class="basebar ok"><div><b>${srv.offline ? "⚠ Sin conexión con el servidor" : "✓ Tu base está en el servidor"}</b><div class="hint">${srv.offline ? "Los cambios quedan en este dispositivo y se suben solos cuando vuelve la conexión." : "Cada cambio se guarda ahí: la ves igual en la compu y en el celular. El servidor guarda además una copia por día."}</div></div><button class="btn small" id="srvSync">Sincronizar ahora</button><button class="btn small" id="srvLogout">Salir en este dispositivo</button></div>`;
   if (!LOCAL_MODE) return "";
   if (!FS_OK) return `<div class="basebar"><div><b>Tus datos se guardan en este navegador.</b><div class="hint">Para guardarlos en un archivo propio junto al HTML, abrí la app con Chrome o Edge. Mientras tanto, usá «Exportar base» para tener una copia.</div></div></div>`;
   const n = fileHandle ? esc(fileHandle.name) : "";
@@ -868,7 +867,7 @@ function baseBar(){
 
 
 /* ---------- base en el servidor (cuando la app está hosteada con api.php al lado) ---------- */
-let SRV_URL = "api.php"; const LS_PERFIL = "menu-casa-perfil", LS_SRVKEY = "menu-casa-srvkey", LS_SRVREV = "menu-casa-srvrev", LS_SRVDIRTY = "menu-casa-srvdirty";
+let SRV_URL = "api.php"; const LS_SRVKEY = "menu-casa-srvkey", LS_SRVREV = "menu-casa-srvrev", LS_SRVDIRTY = "menu-casa-srvdirty";
 let srv = null; // {key, rev, dirty, offline, timer, chain}
 async function srvFetch(method, body, q){
   const r = await fetch(SRV_URL + "?t=" + Date.now() + (q || ""), {method, cache: "no-store", headers: Object.assign({"X-Menu-Key": srv.key}, body ? {"Content-Type": "application/json"} : {}), body: body ? JSON.stringify(body) : undefined});
@@ -885,7 +884,7 @@ async function srvProbe(){
 function askKey(msg){
   return new Promise(res => {
     $("#modalRoot").innerHTML = `<div class="backdrop"><div class="modal" style="width:min(460px,100%)"><div class="head"><h2>🔑 Entrar a Menú de la Casa</h2></div>
-      <p class="hint">Escribí tu clave. Cada persona tiene la suya y entra a su propio menú, sus recetas y sus compras.</p>
+      <p class="hint">Tus datos se guardan en el servidor, así los ves igual en la compu y en el celular. Escribí la clave de la casa (la que configuraste al publicarla).</p>
       ${msg ? `<div class="err">${esc(msg)}</div>` : ""}
       <label class="f">Clave<input id="srvKeyIn" type="password" autocomplete="current-password"></label>
       <div class="confirm" style="margin-top:10px"><button class="btn primary" id="srvKeyGo">Entrar</button><button class="btn" id="srvKeySkip">Usar sin servidor (solo este dispositivo)</button></div></div></div>`;
@@ -948,12 +947,8 @@ async function connectSrv(){
     if (r.status === 401) { srv.key = ""; try { localStorage.removeItem(LS_SRVKEY); } catch (e) {} msg = "Clave incorrecta. Probá de nuevo."; continue; }
     if (r.status !== 200 || !r.j) { srv.offline = true; setStatus(r.j && r.j.error ? "Servidor: " + r.j.error : "Sin conexión con el servidor: guardando en este dispositivo"); break; }
     lsSet(LS_SRVKEY, srv.key);
-    const j = r.j, perfil = j.perfil || "", prevP = lsGet(LS_PERFIL);
-    srv.perfil = perfil; srv.perfilName = j.perfilName || ""; srv.admin = !!j.admin;
-    if (prevP !== null ? prevP !== perfil : !!perfil) { // en este aparato estaba otra persona: no mezclar sus datos
-      state = normalize(clone(DEFAULT)); srv.rev = 0; srvMark(false); lsSet(LS_SRVREV, "0"); lsSet(LS_KEY, JSON.stringify(state)); }
-    lsSet(LS_PERFIL, perfil);
-    if (!j.state) { srvMark(true); await srvPush(true); toast(perfil ? `¡Hola ${srv.perfilName}! Tu menú arranca con las recetas de base` : "Tus datos de este dispositivo quedaron guardados en el servidor"); }
+    const j = r.j;
+    if (!j.state) { srvMark(true); await srvPush(true); toast("Tus datos de este dispositivo quedaron guardados en el servidor"); }
     else if (srv.dirty && j.rev === srv.rev) await srvPush();
     else if (srv.dirty && srv.rev) { const pick = await chooseSrv((j.savedAt || 0) * 1000, state.updatedAt); if (pick === "server") srvAdopt(j, true); else { srv.rev = j.rev; await srvPush(); } }
     else srvAdopt(j, true);
@@ -966,38 +961,7 @@ async function connectSrv(){
   render();
   return true;
 }
-function srvLogout(){ try { localStorage.removeItem(LS_SRVKEY); } catch (e) {} srv = null; location.reload(); }
-/* ---- perfiles (solo el perfil principal) ---- */
-let perfilesList = null, perfilMsg = "";
-async function srvAdmin(method, accion, body){
-  const {status, j} = await srvFetch(method, body || null, accion ? "&accion=" + accion : "&perfiles=1");
-  if (status !== 200) throw new Error((j && j.error) || "No pude hablar con el servidor");
-  return j;
-}
-async function loadPerfiles(){ try { perfilesList = (await srvAdmin("GET")).perfiles; perfilMsg = ""; } catch (e) { perfilesList = []; perfilMsg = e.message; } if (tab === "datos") render(); }
-function perfilesSec(){
-  if (!srv || srv.offline) return "";
-  const who = srv.perfil ? srv.perfilName : "Perfil principal";
-  let h = `<section class="dsec"><h3>👤 Perfiles</h3><p>Entraste como <b>${esc(who)}</b>. Para entrar con otro perfil, tocá «Salir / cambiar de perfil» acá abajo.</p>`;
-  if (!srv.admin) return h + `<p class="hint">Tu menú, tus recetas y tus compras son solo tuyos: los demás perfiles no los ven.</p></section>`;
-  if (perfilesList === null) { loadPerfiles(); return h + `<p class="hint">Cargando perfiles…</p></section>`; }
-  h += `<p class="hint">Cada perfil entra con su propia clave y tiene su propia base, que arranca con las recetas de base. Tu base es la principal y no se mezcla con las otras. Pasale a cada persona el link de la app y su clave.</p>`;
-  if (perfilMsg) h += `<div class="err">${esc(perfilMsg)}</div>`;
-  h += perfilesList.length ? `<div class="plist">${perfilesList.map(p => `<div class="prow"><b>${esc(p.name)}</b><span class="hint">desde ${new Date(p.created).toLocaleDateString("es-AR")}</span><button class="btn small" data-pclave="${esc(p.id)}">Cambiar clave</button><button class="btn small danger" data-pdel="${esc(p.id)}">Borrar</button></div>`).join("")}</div>` : `<p class="hint">Todavía no hay otros perfiles.</p>`;
-  h += `<div class="saveform"><input id="pName" placeholder="Nombre (ej. Sofi)" maxlength="40" style="flex:1"><input id="pClave" placeholder="Su clave" autocomplete="new-password" style="flex:1"><button class="btn primary" id="pAdd">Crear perfil</button></div></section>`;
-  return h;
-}
-async function perfilClick(t){
-  try {
-    if (t.id === "pAdd") { const name = $("#pName").value.trim(), clave = $("#pClave").value.trim(); if (!name || !clave) return toast("Poné nombre y clave");
-      await srvAdmin("POST", "crear", {name, clave}); toast(`Listo: ${name} ya puede entrar con su clave`); return loadPerfiles(); }
-    if (t.dataset.pclave) { const p = perfilesList.find(x => x.id === t.dataset.pclave), clave = (prompt(`Nueva clave para ${p.name}:`) || "").trim(); if (!clave) return;
-      await srvAdmin("POST", "clave", {id: p.id, clave}); toast("Clave cambiada"); return loadPerfiles(); }
-    if (t.dataset.pdel) { const p = perfilesList.find(x => x.id === t.dataset.pdel);
-      if (!confirm(`¿Borrar el perfil de ${p.name}? Se pierde su menú, sus recetas y sus compras, y no se puede deshacer.`)) return;
-      await srvAdmin("POST", "borrar", {id: p.id}); toast(`Perfil de ${p.name} borrado`); return loadPerfiles(); }
-  } catch (e) { perfilMsg = e.message; render(); }
-}
+function srvLogout(){ try { localStorage.removeItem(LS_SRVKEY); } catch (e) {} srv = null; setStatus("Guardado en este navegador"); render(); toast("Este dispositivo ya no usa el servidor. Recargá la página para volver a entrar."); }
 async function connectDb(){
   if (!window.claude || !window.claude.use) { setStatus(lsGet(LS_KEY) ? "Guardado en este navegador" : "Listo"); return; }
   try {
@@ -2741,7 +2705,7 @@ function viewProductosAll(){
 }
 function whereText(){
   if (dref) return "Tus datos se guardan solos en tu cuenta de Claude.";
-  if (srv) return srv.offline ? "Tus datos se guardan en el servidor (ahora sin conexión: se suben cuando vuelva)." : `Tus datos se guardan en el servidor${srv.perfil ? `, en el perfil de ${srv.perfilName}` : ""}.`;
+  if (srv) return srv.offline ? "Tus datos se guardan en el servidor (ahora sin conexión: se suben cuando vuelva)." : "Tus datos se guardan en el servidor.";
   if (fileState === "connected" && fileHandle) return `Tus datos se guardan solos en el archivo ${fileHandle.name}.`;
   return "Tus datos se guardan solo en este navegador.";
 }
@@ -2761,7 +2725,6 @@ function viewDatos(){
   return `<div class="toolbar"><h2>Tus datos</h2></div>
   <section class="dsec"><h3>Cómo se ve</h3><p class="hint">Se elige en cada aparato: lo que pongas acá vale para este celu o compu.</p>
     <div class="seg" role="radiogroup" aria-label="Modo de color">${[["claro", "☀️ Claro"], ["oscuro", "🌙 Oscuro"], ["auto", "Como el celu"]].map(([v, l]) => `<button role="radio" data-theme-set="${v}" aria-checked="${th === v}" aria-selected="${th === v}">${l}</button>`).join("")}</div></section>
-  ${perfilesSec()}
   <section class="dsec"><h3>Dónde se guarda</h3>
     <p><b>${esc(whereText())}</b></p>
     <p class="hint">Es <b>una sola base</b> con todo junto: el menú, las compras, tus ${nR} recetas (${nS} ${nS === 1 ? "especial" : "especiales"}), los ${nP} productos con sus marcas y lo que marcaste. Todas las pestañas leen y guardan en el mismo lugar.</p>
@@ -4277,7 +4240,6 @@ document.addEventListener("click", async e => {
   }
   if (t.id === "srvSync") { if (srv) { srv.offline = false; await (srv.dirty ? srvPush() : srvPull()); toast(srv && !srv.offline ? "Sincronizado" : "No hay conexión con el servidor"); render(); } return; }
   if (t.id === "srvLogout") { srvLogout(); return; }
-  if (t.id === "pAdd" || t.dataset.pclave || t.dataset.pdel) { perfilClick(t); return; }
   if (t.id === "exportB") { await exportBase(); return render(); }
   if (t.id === "snooze") { try { localStorage.setItem("menu-casa-snooze", String(Date.now() + 3 * 86400000)); } catch (e) {} return render(); }
   if (t.id === "catsBtn") return openCats();
