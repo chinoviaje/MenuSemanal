@@ -495,6 +495,8 @@ select,input,textarea{border-radius:10px}
 .mpstock{margin-top:4px}
 /* recetas */
 .rsearch input{font-size:1rem;padding:12px 14px;border-radius:14px}
+.rsecx{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.rsecx .linkbtn{font-size:13px;font-weight:600;text-transform:none;letter-spacing:0}
+@media (max-width:400px){.hide-xs{display:none}}
 .calcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:24px}
 .calccard{display:flex;gap:12px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;font:inherit;color:inherit;position:relative}
 .calccard:hover{border-color:var(--accent)}.calccard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -1352,7 +1354,29 @@ function migrateUserRecipes(s){
   if (s.migUser < 16) { const SELL = {"Tomate": {u: "kg", w: 150}, "Berenjena": {u: "kg", w: 300}};
     for (const p of s.products || []) if (SELL[p.name] && !p.sell) p.sell = SELL[p.name]; }
   if (s.migUser < 17) { const z = (s.products || []).find(p => p.name === "Zapallito"); if (z && z.sell && z.sell.w === 250) z.sell.w = 170; }
-  s.migUser = 17;
+  if (s.migUser < 18) { // tarta de zapallitos: la receta de ella reemplaza a la anterior
+    const t = s.recipes.find(r => r.name === "Tarta de zapallito" || r.name === "Tarta de zapallitos");
+    if (t) Object.assign(t, {name: "Tarta de zapallitos", tTotal: 50, tActive: 20,
+      rows: [{q: 3, u: "", name: "zapallitos (unos 500 g), cortados en láminas", p: pid("Zapallito")},
+        {q: 3, u: "", name: "cebollas", p: pid("Cebolla")},
+        {q: 1, u: "", name: "diente de ajo", p: pid("Ajo")},
+        {q: 1, u: "", name: "cucharadita colmada de caldo de verduras casero", p: null},
+        {q: 2, u: "", name: "huevos", p: pid("Huevos")},
+        {q: 5, u: "g", name: "azúcar (1 cucharadita)", p: pid("Azúcar")},
+        {q: 30, u: "g", name: "queso parmesano rallado, a gusto", p: pid("Queso rallado")},
+        {q: null, u: "", name: "Aceite y condimento a gusto", p: null}],
+      prep: "1. Rehogá la cebolla y el ajo picados con un poco de aceite.\n2. Agregá los zapallitos en láminas, el caldo casero, el condimento y el azúcar. Cociná hasta que estén tiernos y no quede líquido.\n3. Cuando está listo, sacalo del fuego y mezclale los 2 huevos con el parmesano.\n4. Volcá sobre la masa y llevá a horno moderado unos 30 minutos, hasta que cuaje y se dore.",
+      tips: "• El azúcar equilibra la acidez de la cebolla y el zapallito: no se nota dulce.\n• Si el relleno quedó con jugo, dejalo un par de minutos más al fuego antes de sumar los huevos, así la masa no se humedece.\n• La masa se suma sola (receta «Masa de tarta»), ajustada al tamaño del molde.",
+      note: "Dejá entibiar el relleno antes de mezclar con los huevos, así no se cocinan."});
+  }
+  if (s.migUser < 19) { // el caldo es el casero, no cubito
+    const t = s.recipes.find(r => r.name === "Tarta de zapallitos"), cub = s.products.find(p => p.name === "Caldo de verdura en cubitos");
+    if (t) { t.rows = t.rows.map(x => /cubito de caldo/i.test(x.name) ? {q: 1, u: "", name: "cucharadita colmada de caldo de verduras casero", p: null} : x);
+      t.prep = t.prep.replace("el cubito de caldo", "el caldo casero"); t.tips = (t.tips || "").replace(/\n• En vez del cubito[^\n]*/, ""); }
+    if (cub && !s.recipes.some(r => (r.rows || []).some(x => x.p === cub.id))) { s.products = s.products.filter(p => p !== cub); if (s.stock) delete s.stock[cub.id]; }
+  }
+  if (s.migUser < 20) { const t = s.recipes.find(r => r.name === "Tarta de zapallitos"); if (t) t.rows.forEach(x => { if (x.name === "cucharada de caldo de verduras casero") x.name = "cucharadita colmada de caldo de verduras casero"; }); }
+  s.migUser = 20;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
@@ -1584,7 +1608,7 @@ const CALC_PARAMS = {
     ["bebAd","Bebida por adulto",0.6,"l"],["bebCh","Bebida por chico",0.5,"l"],["fiambre","Picada: fiambres por adulto",100,"g"],["quesoP","Picada: quesos por adulto",100,"g"],["panP","Picada: pan y grisines por adulto",60,"g"],
     ["snack","Picada: snacks y aceitunas por adulto",50,"g"],["largo","Si dura más de 3 horas, sumar",30,"%"]],
   equiv: [["taza","1 taza son",240,"ml"],["vaso","1 vaso son",200,"ml"],["harina","Harina 0000: 1 taza",120,"g"],["azucar","Azúcar: 1 taza",200,"g"],["impalpable","Azúcar impalpable: 1 taza",120,"g"],["manteca","Manteca: 1 taza",225,"g"],
-    ["aceite","Aceite: 1 taza",215,"g"],["leche","Leche o agua: 1 taza",240,"g"],["cacao","Cacao: 1 taza",100,"g"],["maicena","Maicena: 1 taza",130,"g"],["avena","Avena: 1 taza",90,"g"],["arroz","Arroz crudo: 1 taza",200,"g"],
+    ["aceite","Aceite: 1 taza",215,"g"],["leche","Agua, leche o caldo: 1 taza",240,"g"],["cacao","Cacao: 1 taza",100,"g"],["maicena","Maicena: 1 taza",130,"g"],["avena","Avena: 1 taza",90,"g"],["arroz","Arroz crudo: 1 taza",200,"g"],
     ["miel","Miel: 1 taza",340,"g"],["dulce","Dulce de leche: 1 taza",300,"g"],["queso","Queso rallado: 1 taza",90,"g"],["sal","Sal fina: 1 taza",290,"g"],["coco","Coco rallado: 1 taza",80,"g"]],
   coccion: [["porcion","Porción cocida por persona",180,"g"],
     ["arrozR","Arroz blanco: rinde",3,"× su peso"],["arrozA","Arroz blanco: agua",2,"× su peso"],["integralR","Arroz integral: rinde",2.8,"× su peso"],["integralA","Arroz integral: agua",2.5,"× su peso"],
@@ -1594,7 +1618,7 @@ const CALC_PARAMS = {
   molde: []
 };
 const CALC_LIST = [["arroz","🥘","Arroces y paellas"],["asado","🔥","Asado"],["pastas","🍝","Pastas"],["pizza","🍕","Pizzas y empanadas"],["cumple","🎂","Cumpleaños y picadas"],
-  ["molde","🧁","Cambiar el molde"],["equiv","🥄","Tazas y cucharadas a gramos"],["coccion","🫘","Crudo → cocido (legumbres, arroz…)"]];
+  ["molde","🧁","Cambiar el molde"],["equiv","🥄","Conversor de medidas"],["coccion","🫘","Crudo → cocido (legumbres, arroz…)"]];
 function calcP(id){ const own = (state.calcRules || {})[id] || {}; const o = {}; for (const [k, , d] of CALC_PARAMS[id] || []) o[k] = own[k] !== undefined ? own[k] : d; return o; }
 function calcExtras(id){
   const own = (state.calcRules || {})[id] || {}, ps = CALC_PARAMS[id] || [], changed = ps.filter(([k]) => own[k] !== undefined).length;
@@ -1619,7 +1643,7 @@ const G_DEF = {
   pizza: {ad: 6, ch: 2, que: "ambas", casera: false},
   cumple: {ad: 10, ch: 15, tipo: "cumple", largo: false},
   molde: {fa: "redondo", a1: 24, a2: 0, fb: "rect", b1: 20, b2: 30, rid: ""},
-  equiv: {cant: 1, med: "taza", ing: "harina", gramos: 100},
+  equiv: {cant: 1, med: "taza", ing: "harina"},
   coccion: {item: "arrozB", modo: "crudo", crudo: 300, personas: 4}
 };
 function openGCalc(id){ calc = null; asado = null; gcalc = {id, ...G_DEF[id], ...((state.gcalcPrefs || {})[id] || {})}; renderGCalc(); }
@@ -1688,15 +1712,25 @@ const GCALC = {
     const g = r && fac > 0 ? [[(r.parts && r.parts.length ? (r.partLabel || "Relleno") + ": " : "") + "«" + r.name + "» en tu molde", ingLines(r, serves(r) * fac).filter(l => !/masa de tarta \(ver/i.test(l)).map(l => [l, ""])], ...partsOf(r, serves(r) * fac).map(pt => [pt.part + ": «" + pt.r.name + "»", ingLines(pt.r, pt.people).map(l => [l, ""])])] : [];
     return {ui, tiles: [["Multiplicá todo por", fac > 0 ? "× " + nfx(fac, 2) : "—", fac > 0 ? (fac > 1 ? "tu molde es más grande" : fac < 1 ? "tu molde es más chico" : "son iguales") : "completá las medidas"], ["Superficie", nfx(B) + " cm²", "receta: " + nfx(A) + " cm²"], ["Huevos", fac > 0 ? "redondeá" : "", "si da 2,6 huevos, usá 3 chicos o 2 grandes"]], groups: g, title: "🧁 *Cambio de molde ×" + nfx(fac, 2) + "*", noText: !r};
   },
-  equiv(c, P){
-    const ml = {taza: P.taza, media: P.taza / 2, tercio: P.taza / 3, cuarto: P.taza / 4, cda: 15, cdita: 5, vaso: P.vaso}[c.med];
-    const dens = P[c.ing] / P.taza, grams = c.cant * ml * dens, back = c.gramos / (dens * P.taza);
+  equiv(c, P){ // conversor: cualquier medida → todas las demás, según el ingrediente
+    const VOL = {taza: P.taza, media: P.taza / 2, tercio: P.taza / 3, cuarto: P.taza / 4, cda: 15, cdita: 5, vaso: P.vaso, ml: 1, l: 1000}, PESO = {g: 1, kg: 1000};
     const ings = CALC_PARAMS.equiv.filter(([k]) => k !== "taza" && k !== "vaso");
-    const ui = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">${gNum("cant", "Cantidad", .25)}
-      <label class="f">Medida<select data-gi="med">${[["taza", "taza"], ["media", "½ taza"], ["tercio", "⅓ taza"], ["cuarto", "¼ taza"], ["cda", "cucharada (sopera)"], ["cdita", "cucharadita (té)"], ["vaso", "vaso"]].map(([v, l]) => `<option value="${v}"${c.med === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
-      <label class="f">Ingrediente<select data-gi="ing">${ings.map(([k, l]) => `<option value="${k}"${c.ing === k ? " selected" : ""}>${esc(l.split(":")[0])}</option>`).join("")}</select></label></div>`;
-    return {ui, tiles: [["Son", nfx(grams, grams < 20 ? 1 : 0) + " g", nfx(c.cant * ml) + " ml de volumen"],
-      ["Al revés", `<input type="number" min="0" step="10" data-gi="gramos" value="${c.gramos}" style="max-width:90px"> g`, "= " + nfx(back, 2) + " tazas · " + nfx(c.gramos / (dens * 15), 1) + " cucharadas"]], groups: [], noText: true};
+    if (!P[c.ing]) c.ing = "leche";
+    if (!VOL[c.med] && !PESO[c.med]) c.med = "taza";
+    const dens = P[c.ing] / P.taza, cant = Number(c.cant) || 0;
+    const ml = VOL[c.med] ? cant * VOL[c.med] : cant * PESO[c.med] / dens, g = ml * dens;
+    const frac = x => { if (!(x > 0)) return "0"; const w = Math.floor(x + 1e-9), r = x - w; const opts = [[0, ""], [.25, "¼"], [1 / 3, "⅓"], [.5, "½"], [2 / 3, "⅔"], [.75, "¾"], [1, ""]];
+      let best = opts[0]; for (const o of opts) if (Math.abs(r - o[0]) < Math.abs(r - best[0])) best = o;
+      const W = best[0] === 1 ? w + 1 : w, exact = Math.abs(r - best[0]) < .04;
+      return (exact ? "" : "≈ ") + (W ? W + (best[1] ? " " + best[1] : "") : best[1] || "0"); };
+    const n0 = x => nfx(x, x < 10 ? 1 : 0);
+    const MEDS = [["taza", "taza"], ["media", "½ taza"], ["tercio", "⅓ taza"], ["cuarto", "¼ taza"], ["cda", "cucharada"], ["cdita", "cucharadita"], ["vaso", "vaso"], ["ml", "ml / cc"], ["l", "litro"], ["g", "gramos"], ["kg", "kilo"]];
+    const ui = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">${gNum("cant", "Cantidad", "any")}
+      <label class="f">Medida<select data-gi="med">${MEDS.map(([v, l]) => `<option value="${v}"${c.med === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+      <label class="f">De qué<select data-gi="ing">${ings.map(([k, l]) => `<option value="${k}"${c.ing === k ? " selected" : ""}>${esc(l.split(":")[0])}</option>`).join("")}</select></label></div>
+      <p class="hint" style="margin-top:8px">1 ml = 1 cc. Taza de ${P.taza} ml, cucharada de 15 ml, cucharadita de 5 ml. Las medidas son al ras.</p>`;
+    return {ui, tiles: [["Gramos", n0(g) + " g", g >= 1000 ? nfx(g / 1000, 2) + " kg" : ""], ["ml / cc", n0(ml) + " ml", ml >= 1000 ? nfx(ml / 1000, 2) + " l" : ""],
+      ["Tazas", frac(ml / P.taza), "de " + P.taza + " ml"], ["Cucharadas", frac(ml / 15), "soperas"], ["Cucharaditas", frac(ml / 5), "de té"]], groups: [], noText: true};
   },
   coccion(c, P){
     const NAMES = {arrozB: ["arroz", "Arroz blanco", 0], integral: ["integral", "Arroz integral", 0], lentejas: ["lentejas", "Lentejas", 0], garbanzos: ["garbanzos", "Garbanzos", 12], porotos: ["porotos", "Porotos", 12], quinoa: ["quinoa", "Quinoa", 0], polenta: ["polenta", "Polenta", 0], fideos: ["fideos", "Fideos secos", 0]};
@@ -2100,7 +2134,7 @@ function render(){
   $("#servNum").textContent = state.comensales;
   const m = $("#main");
   const head = t => `<div class="pagehead"><div><h2 class="ptitle">${t}</h2></div></div>`;
-  const segRec = () => `<div class="pagehead"><div><h2 class="ptitle">Recetas</h2></div><div class="pacts"><button class="btn primary" id="newRec">＋ Nueva receta</button>
+  const segRec = () => `<div class="pagehead"><div><h2 class="ptitle">Recetas</h2></div><div class="pacts"><button class="btn" data-calcgo="equiv" title="Conversor de medidas: tazas, cucharadas, ml / cc y gramos" aria-label="Conversor de medidas">🥄<span class="hide-xs"> Conversor</span></button><button class="btn primary" id="newRec">＋ Nueva receta</button>
       <div class="more"><button class="iconbtn" id="recMore" aria-label="Más opciones de recetas" aria-expanded="${openMenu === "rec"}">⋯</button>${openMenu === "rec" ? `<div class="menu" role="menu">${CALC_LIST.map(([id, ic, n]) => `<button role="menuitem" data-calcgo="${id}">${ic} ${esc(n)}</button>`).join("")}<button role="menuitem" id="catsBtn">Categorías y etiquetas</button></div>` : ""}</div></div></div>` + seg([["recetas", "Recetas"], ["especiales", "Especiales"], ["calcular", "🧮 Calcular"]], tab);
   const segDesp = () => head("Despensa") + seg([["despensa", "Freezer y meal prep"], ["productos", "En casa y productos"]], tab);
   const nt = h => `<div class="notitle">${h}</div>`;
@@ -2643,7 +2677,7 @@ function recList(){
 let recSheet = false;
 const CALC_DESC = {arroz: "Arroz, caldo y aceite justos para tu paellera", asado: "Cuánta carne y achuras comprar por persona", pastas: "Cuánta pasta, salsa y agua por persona",
   pizza: "Cuántas pizzas y empanadas, y la masa casera", cumple: "Sándwiches, bebida y picada para un cumpleaños", molde: "Adaptar una receta a un molde de otro tamaño",
-  equiv: "Pasar tazas y cucharadas a gramos", coccion: "Cuánto rinde cocido lo que pesás crudo"};
+  equiv: "Tazas, cucharadas, ml / cc y gramos, según el ingrediente", coccion: "Cuánto rinde cocido lo que pesás crudo"};
 function viewCalcs(){
   return `<p class="hint" style="margin:14px 0 10px">Cuentas de cocina que se guardan con tus ajustes y notas.</p><div class="calcgrid">${CALC_LIST.map(([id, ic, n]) => `<button class="calccard" data-calcgo="${id}"><span class="ci" aria-hidden="true">${ic}</span><span><b>${esc(n)}</b><small>${esc(CALC_DESC[id] || "")}</small></span>${(state.calcNotes || {})[id] || Object.keys((state.calcRules || {})[id] || {}).length ? `<span class="cmine" title="Tiene tus ajustes o notas">✎</span>` : ""}</button>`).join("")}</div>`;
 }
@@ -2796,7 +2830,7 @@ function renderModal(){
       ${mpd ? `<p class="rnote blue">🥫 En el stock: <b>${nfmt(fzOf(d.id))} ${esc(d.mp.u)}</b> · <button class="linkbtn" data-mpweek="${d.id}">${state.preps.includes(d.id) ? "✓ está en esta semana" : "Hacer una tanda esta semana"}</button></p>` : ""}
       ${mpUses(d).map(r => `<p class="rnote blue">🥫 Lleva ${esc(r.name.toLowerCase())}: ${fzOf(r.id) > 0 ? `tenés ${nfmt(fzOf(r.id))} ${esc(r.mp.u)} en el stock` : `no te queda · <button class="linkbtn" data-mpweek="${r.id}">hacer una tanda esta semana</button>`}</p>`).join("")}
       ${modal.buy ? `<div class="rbuy">${buyPanel(d)}</div>` : ""}
-      <div class="rcols"><div class="rcol"><h3 class="rsec">Ingredientes</h3>${ings}
+      <div class="rcols"><div class="rcol"><h3 class="rsec rsecx">Ingredientes<button class="linkbtn" data-calcgo="equiv">🥄 Convertir medidas</button></h3>${ings}
           ${sides.length || recById(modal.side) ? `<h3 class="rsec">${pastaish(d) ? "Con salsa o guarnición" : "Va bien con"}</h3><div class="chips">${[...new Set([...sides, recById(modal.side)].filter(Boolean))].map(g => `<button class="chip" data-sidepick="${g.id}" aria-pressed="${modal.side === g.id}" title="${modal.side === g.id ? "Sacar" : "Sumar a ingredientes, compras y modo cocina"}">${modal.side === g.id ? "✓ " : "+ "}${esc(g.name)}</button>`).join("")}</div>` : ""}</div>
         <div class="rcol">${d.before ? `<h3 class="rsec">Antes de empezar</h3><div class="rtext">${esc(d.before)}</div>` : ""}
           <h3 class="rsec">Preparación</h3>${steps.length ? `<ol class="stepl">${steps.map((x, k) => `<li><span>${k + 1}</span><div>${esc(x)}</div></li>`).join("")}</ol>` : `<p class="hint">—</p>`}
