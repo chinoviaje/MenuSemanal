@@ -1411,7 +1411,25 @@ function migrateUserRecipes(s){
       r.tips = ((r.tips || "").trim() ? r.tips.trim() + "\n" : "") + "• Truco de Arguiñano: parte del líquido de la salsa es el caldo de hervir el pollo. La masa queda más sabrosa y más cremosa. Él usa 125 ml de caldo por cada litro de leche.";
     }
   }
-  s.migUser = 24;
+  if (s.migUser < 25) { // pastas frescas de la fábrica de pastas
+    const F = "Fábrica de pastas", noq = s.products.find(p => p.name === "Ñoquis frescos"); if (noq && noq.shop === "Almacén") noq.shop = F;
+    const sorr = pid("Sorrentinos", F, "unidad", "unidades"), sp = s.products.find(p => p.id === sorr); if (sp && !sp.packSize) { sp.packType = "docena"; sp.packSize = 12; }
+    const add = r => { if (!s.recipes.some(x => x.name === r.name)) s.recipes.push({...base, id: rid(), cat: "Pastas", serves: 3, tNote: "salsa", vianda: true, note: "Elegí la salsa en la columna de al lado.", ...r}); };
+    const queso = {q: 30, u: "", name: "queso rallado", p: pid("Queso rallado")}, salsa = {q: null, u: "", name: "(+ la salsa elegida en el Menú)", p: null};
+    add({name: "Tallarines frescos (con la salsa que elijas)", tTotal: 10, tActive: 10,
+      rows: [{q: 450, u: "", name: "tallarines frescos (o cintas, fetuccini)", p: pid("Tallarines frescos", F, "g", "g")}, queso, salsa],
+      prep: "1. Hervir abundante agua con sal.\n2. Echar los tallarines y separarlos con un tenedor: los frescos se hacen en 3 o 4 minutos.\n3. Colar, mezclar con la salsa elegida y servir con queso.",
+      fz: {can: true, m: 2, thaw: "directo", re: "Directo del freezer al agua hirviendo, un minuto más.", note: "Congelalos en nidos, separados."}});
+    add({name: "Ravioles (con la salsa que elijas)", tTotal: 10, tActive: 10,
+      rows: [{q: 600, u: "", name: "ravioles (de verdura, ricota o carne)", p: pid("Ravioles", F, "g", "g")}, queso, salsa],
+      prep: "1. Hervir abundante agua con sal.\n2. Echar los ravioles con el agua hirviendo suave, para que no se rompan: están en 5 o 6 minutos, cuando suben y la masa está tierna.\n3. Sacarlos con espumadera, mezclar con la salsa elegida y servir con queso.",
+      fz: {can: true, m: 2, thaw: "directo", re: "Directo del freezer al agua hirviendo: un par de minutos más.", note: "Congelalos en la caja o separados en una placa."}});
+    add({name: "Sorrentinos (con la salsa que elijas)", tTotal: 15, tActive: 10,
+      rows: [{q: 24, u: "", name: "sorrentinos (8 por persona)", p: sorr}, queso, salsa],
+      prep: "1. Hervir abundante agua con sal.\n2. Echar los sorrentinos con el agua hirviendo suave: están en 6 a 8 minutos, cuando suben y el borde está tierno.\n3. Sacarlos con espumadera, mezclar con la salsa elegida y servir con queso.",
+      fz: {can: true, m: 2, thaw: "directo", re: "Directo del freezer al agua hirviendo, unos minutos más.", note: "Congelalos separados en una placa y después pasalos a una bolsa."}});
+  }
+  s.migUser = 25;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
