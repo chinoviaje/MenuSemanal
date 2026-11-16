@@ -1100,7 +1100,7 @@ function migrateUserRecipes(s){
   if (s.migUser < 2 && !s.recipes.some(r => r.name === "Masa de tarta")) {
     s.recipes.push({...base, id: rid(), cat: "Masas", name: "Masa de tarta", serves: 6, mold: {f: "redondo", x: 24, y: null}, tTotal: 10, tActive: 10, tNote: "horno según el relleno",
       rows: [{q: 220, u: "g", name: "harina 0000", p: pid("Harina 0000")}, {q: 120, u: "ml", name: "leche tibia", p: pid("Leche")},
-        {q: null, u: "", name: "aceite: la mitad de la leche (60 ml para esta medida)", p: null}, {q: null, u: "", name: "1 cucharadita de polvo de hornear (Royal)", p: null}],
+        {q: 60, u: "ml", name: "aceite", p: null}, {q: null, u: "", name: "1 cucharadita de polvo de hornear (Royal)", p: null}],
       prep: "1. Mezclá todo en un bowl con cuchara de madera.\n2. No se amasa: solo se estira, directo en la tartera o con palote.\n3. Rellená y llevá al horno según el relleno.",
       serve: "Es para una tarta sin tapa.", note: "Tarta: la masa no se amasa, se estira.",
       tips: "• Tus medidas originales: 2 tazas de harina, 1 taza de leche tibia, ½ taza de aceite y 1 cucharadita de Royal (tu taza es de 120 ml).\n• La receta está pensada para una tartera de 24 cm: con «🧁 Para mi molde» te calcula para la tuya. Si la tuya es otra medida, cambiala en Editar → Molde."});
@@ -1359,7 +1359,7 @@ function migrateUserRecipes(s){
     if (t) Object.assign(t, {name: "Tarta de zapallitos", tTotal: 50, tActive: 20,
       rows: [{q: 3, u: "", name: "zapallitos (unos 500 g), cortados en láminas", p: pid("Zapallito")},
         {q: 3, u: "", name: "cebollas", p: pid("Cebolla")},
-        {q: 1, u: "", name: "diente de ajo", p: pid("Ajo")},
+        {q: 1, u: "", name: "ajo", p: pid("Ajo")},
         {q: 1, u: "", name: "cucharadita colmada de caldo de verduras casero", p: null},
         {q: 2, u: "", name: "huevos", p: pid("Huevos")},
         {q: 5, u: "g", name: "azúcar (1 cucharadita)", p: pid("Azúcar")},
@@ -1376,7 +1376,42 @@ function migrateUserRecipes(s){
     if (cub && !s.recipes.some(r => (r.rows || []).some(x => x.p === cub.id))) { s.products = s.products.filter(p => p !== cub); if (s.stock) delete s.stock[cub.id]; }
   }
   if (s.migUser < 20) { const t = s.recipes.find(r => r.name === "Tarta de zapallitos"); if (t) t.rows.forEach(x => { if (x.name === "cucharada de caldo de verduras casero") x.name = "cucharadita colmada de caldo de verduras casero"; }); }
-  s.migUser = 20;
+  if (s.migUser < 21) { // masa de tarta: el aceite como cantidad (se ajusta sola con el molde y las porciones)
+    const m = s.recipes.find(r => r.name === "Masa de tarta");
+    if (m) m.rows = (m.rows || []).map(x => /^aceite: la mitad de la leche/i.test(x.name || "") ? {q: 60, u: "ml", name: "aceite", p: null} : x);
+  }
+  if (s.migUser < 22 && !s.recipes.some(r => r.name === "Croquetas de jamón")) { // receta de Arguiñano
+    const cp = s.recipes.find(r => r.name === "Croquetas de pollo"), jc = s.products.find(p => p.name === "Jamón cocido");
+    s.recipes.push({...base, id: rid(), cat: "Cerdo", name: "Croquetas de jamón", serves: 6, tTotal: 60, tActive: 40, tNote: "+ enfriar la masa",
+      link: "https://www.infobae.com/espana/2023/09/24/la-receta-de-croquetas-de-jamon-de-arguinano-un-plato-facil-con-ingredientes-comunes/",
+      rows: [{q: 200, u: "", name: "jamón crudo (serrano), picado", p: pid("Jamón crudo", jc ? jc.shop : undefined, "g", "g")},
+        {q: 0.5, u: "", name: "cebolla de verdeo (1 cebolleta), picada fina", p: pid("Cebolla de verdeo")},
+        {q: 1, u: "", name: "ajo, picado fino", p: pid("Ajo")},
+        {q: 100, u: "", name: "manteca", p: pid("Manteca")},
+        {q: 100, u: "", name: "harina (para la salsa)", p: pid("Harina 0000")},
+        {q: 1000, u: "", name: "leche, tibia o a temperatura ambiente", p: pid("Leche")},
+        {q: 3, u: "", name: "huevos batidos (para rebozar)", p: pid("Huevos")},
+        {q: 150, u: "", name: "pan rallado (para rebozar)", p: pid("Pan rallado")},
+        {q: null, u: "", name: "Perejil picado, harina para rebozar y aceite para freír", p: null}],
+      prep: "1. Derretí la manteca en una cacerola y rehogá la cebolla de verdeo y el ajo 5 o 6 minutos. Sumá el jamón y saltealo.\n2. Agregá la harina y cociná un par de minutos. Incorporá la leche de a poco, sin dejar de revolver.\n3. Cociná unos 20 minutos revolviendo todo el tiempo y al final espolvoreá perejil.\n4. Pasá la masa a una fuente, tapala con film en contacto (o untala con un poco de manteca) para que no haga costra, y dejala enfriar.\n5. Ya fría, cortá y dale forma a las croquetas.\n6. Pasalas por harina, huevo batido y pan rallado, y freílas en aceite bien caliente.\n7. Escurrilas sobre papel de cocina.",
+      tips: "• La leche tibia o a temperatura ambiente, y revolver sin parar: así la salsa no hace grumos.\n• El aceite tiene que cubrirlas del todo, así se fríen parejas y no se abren.\n• Aceite a 170–180 °C: si no tenés termómetro, tirá un poco de pan rallado; si burbujea, está listo.\n• La masa sale mejor si la hacés el día anterior y la dejás en la heladera.",
+      note: "Croquetas: la masa se hace el día anterior y se deja en la heladera.",
+      sides: cp && cp.sides ? cp.sides.slice() : [], vianda: true,
+      fz: {can: true, m: 3, thaw: "directo", re: "Freílas directo del freezer, en aceite bien caliente.", note: "Congelalas ya rebozadas, separadas en una bandeja, y después pasalas a una bolsa."}});
+  }
+  if (s.migUser < 23) s.recipes.forEach(r => (r.rows || []).forEach(x => { if (r.name === "Tarta de zapallitos" && x.name === "diente de ajo") x.name = "ajo"; if (r.name === "Croquetas de jamón" && x.name === "diente de ajo, picado fino") x.name = "ajo, picado fino"; }));
+  if (s.migUser < 24) { // croquetas de pollo + truco de Arguiñano: parte del líquido es el caldo de hervir el pollo
+    const r = s.recipes.find(x => x.name === "Croquetas de pollo");
+    if (r && Array.isArray(r.rows) && !r.rows.some(x => /caldo de hervir/i.test(x.name || ""))) {
+      const i = r.rows.findIndex(x => /^leche/i.test(x.name || ""));
+      if (i >= 0) { if (Number(r.rows[i].q) === 400) r.rows[i].q = 350; r.rows.splice(i + 1, 0, {q: 50, u: "ml", name: "caldo de hervir el pollo (salsa blanca espesa)", p: null}); }
+      r.rows.push({q: null, u: "", name: "Perejil y la parte verde de una cebolla de verdeo (para hervir el pollo)", p: null});
+      r.prep = (r.prep || "").replace("1. Hervir el pollo 20 min en agua con sal y desmenuzar.", "1. Hervir el pollo 20 min en agua con sal, perejil y la parte verde de la cebolla de verdeo (si es con hueso y sin piel, mejor). Guardar 50 ml del caldo y desmenuzar el pollo.")
+        .replace("sumar la harina y luego la leche de a poco", "sumar la harina y luego la leche y el caldo de a poco");
+      r.tips = ((r.tips || "").trim() ? r.tips.trim() + "\n" : "") + "• Truco de Arguiñano: parte del líquido de la salsa es el caldo de hervir el pollo. La masa queda más sabrosa y más cremosa. Él usa 125 ml de caldo por cada litro de leche.";
+    }
+  }
+  s.migUser = 24;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
