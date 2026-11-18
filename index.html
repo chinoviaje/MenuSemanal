@@ -1429,7 +1429,38 @@ function migrateUserRecipes(s){
       prep: "1. Hervir abundante agua con sal.\n2. Echar los sorrentinos con el agua hirviendo suave: están en 6 a 8 minutos, cuando suben y el borde está tierno.\n3. Sacarlos con espumadera, mezclar con la salsa elegida y servir con queso.",
       fz: {can: true, m: 2, thaw: "directo", re: "Directo del freezer al agua hirviendo, unos minutos más.", note: "Congelalos separados en una placa y después pasalos a una bolsa."}});
   }
-  s.migUser = 25;
+  if (s.migUser < 26 && !s.recipes.some(r => r.name === "Wok de cerdo con arroz y maní")) {
+    const C = "Carnicería / granja / pescadería", wv = s.recipes.find(r => r.name === "Wok de verduras con pollo");
+    s.recipes.push({...base, id: rid(), cat: "Cerdo", name: "Wok de cerdo con arroz y maní", serves: 3, tTotal: 30, tActive: 30, tNote: "",
+      link: "https://www.youtube.com/watch?v=91y79g74ryw",
+      rows: [{q: 500, u: "", name: "solomillo de cerdo, en tiras finas", p: pid("Solomillo de cerdo", C, "g", "g")},
+        {q: 1, u: "", name: "cebolla, en tiras", p: pid("Cebolla")},
+        {q: 1, u: "", name: "zanahoria, en bastoncitos", p: pid("Zanahoria")},
+        {q: 1, u: "", name: "morrón rojo, en tiras", p: pid("Morrón")},
+        {q: 1, u: "", name: "morrón verde, en tiras", p: pid("Morrón verde")},
+        {q: 150, u: "", name: "chauchas, en trozos", p: pid("Chauchas")},
+        {q: 4, u: "", name: "ajo", p: pid("Ajo")},
+        {q: 100, u: "", name: "maní pelado, sin sal", p: pid("Maní pelado", "Almacén", "g", "g")},
+        {q: 80, u: "", name: "arroz largo fino (1 taza ya cocido)", p: pid("Arroz largo fino")},
+        {q: null, u: "", name: "1 cucharadita de jengibre, salsa de soja a gusto, sal, pimienta y aceite", p: null}],
+      prep: "1. Cociná el arroz (o usá arroz que te haya sobrado).\n2. Cortá el cerdo y las verduras en tiras finas o trozos parejos.\n3. Calentá bien el wok o una sartén grande con un poco de aceite y sellá el cerdo con el ajo y el jengibre, a fuego fuerte.\n4. Sumá las verduras empezando por las más firmes (zanahoria, chauchas y morrones) y después la cebolla, para que queden tiernas pero crocantes.\n5. Al final agregá el arroz cocido, el maní y la salsa de soja, y mezclá un minuto para integrar, sin que hierva.",
+      tips: "• Fuego bien fuerte y de a poco: si cargás mucho el wok, la carne larga jugo y se hierve en vez de dorarse.\n• Tené todo cortado antes de prender el fuego: se hace en minutos.\n• Con arroz del día anterior queda más suelto.\n• Si querés el maní más crocante, tostalo un par de minutos en la sartén seca antes de empezar.",
+      sides: [], vianda: true,
+      fz: {can: false, m: 0, thaw: "heladera", re: "", note: "Mejor recién hecho: al congelarse, las verduras pierden lo crocante."}});
+  }
+  if (s.migUser < 27) { // wok de cerdo: sin maní, con marinado de vinagre de manzana
+    const r = s.recipes.find(x => x.name === "Wok de cerdo con arroz y maní" || x.name === "Wok de cerdo con arroz");
+    if (r) {
+      r.name = "Wok de cerdo con arroz"; r.tNote = "+ 20 min de marinado";
+      r.rows = r.rows.filter(x => !/maní/i.test(x.name || ""));
+      if (!r.rows.some(x => /vinagre/i.test(x.name || ""))) r.rows.splice(1, 0, {q: null, u: "", name: "2 cucharadas de vinagre de manzana (para marinar el cerdo)", p: null});
+      r.prep = "1. Mariná el cerdo cortado en tiras con el vinagre de manzana, un chorrito de salsa de soja, sal y pimienta, unos 20 minutos.\n2. Mientras, cociná el arroz (o usá arroz que te haya sobrado) y cortá las verduras en tiras finas o trozos parejos.\n3. Calentá bien el wok o una sartén grande con un poco de aceite y sellá el cerdo escurrido con el ajo y el jengibre, a fuego fuerte.\n4. Sumá las verduras empezando por las más firmes (zanahoria, chauchas y morrones) y después la cebolla, para que queden tiernas pero crocantes.\n5. Al final agregá el arroz cocido y la salsa de soja, y mezclá un minuto para integrar, sin que hierva.";
+      r.tips = (r.tips || "").split("\n").filter(l => !/maní/i.test(l)).join("\n") + "\n• El vinagre del marinado ablanda la carne: escurrila bien antes de ponerla al wok, así se dora.";
+    }
+    const mani = s.products.find(p => p.name === "Maní pelado");
+    if (mani && !s.recipes.some(x => (x.rows || []).some(w => w.p === mani.id))) { s.products = s.products.filter(p => p !== mani); if (s.stock) delete s.stock[mani.id]; }
+  }
+  s.migUser = 27;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
