@@ -1460,7 +1460,20 @@ function migrateUserRecipes(s){
     const mani = s.products.find(p => p.name === "Maní pelado");
     if (mani && !s.recipes.some(x => (x.rows || []).some(w => w.p === mani.id))) { s.products = s.products.filter(p => p !== mani); if (s.stock) delete s.stock[mani.id]; }
   }
-  s.migUser = 27;
+  if (s.migUser < 28) { // wok: la carne se elige (cerdo, pollo o carne)
+    const r = s.recipes.find(x => /^Wok de cerdo con arroz/.test(x.name));
+    if (r) {
+      const C = "Carnicería / granja / pescadería", sol = s.products.find(p => p.name === "Solomillo de cerdo");
+      r.name = "Wok con arroz (cerdo, pollo o carne)"; r.cat = "Arroz";
+      r.rows = r.rows.map(x => /solomillo de cerdo/i.test(x.name || "") ? {q: 500, u: "", name: "cerdo (solomillo), pollo (pechuga o muslo) o carne (cuadril o peceto), en tiras finas", p: pid("Carne para wok (cerdo, pollo o carne)", C, "g", "g")}
+        : /vinagre de manzana/i.test(x.name || "") ? {...x, name: "2 cucharadas de vinagre de manzana (para marinar la carne)"} : x);
+      r.prep = (r.prep || "").replace("Mariná el cerdo cortado en tiras", "Mariná la carne que elegiste, cortada en tiras,").replace("sellá el cerdo escurrido", "sellá la carne escurrida");
+      r.tips = (r.tips || "") + "\n• Con pollo: cocinalo hasta que no quede rosado adentro.\n• Con carne de vaca: sellado rápido y fuego fuerte, así no se endurece.\n• Con cerdo: el solomillo es el más tierno; la bondiola también va bien.";
+      r.note = "Elegí la carne cuando la compres: cerdo, pollo o carne de vaca.";
+      if (sol && !s.recipes.some(x => (x.rows || []).some(w => w.p === sol.id))) { s.products = s.products.filter(p => p !== sol); if (s.stock) delete s.stock[sol.id]; }
+    }
+  }
+  s.migUser = 28;
 }
 function migrateBrands(s){
   if (s.migBrands) return; s.migBrands = 1;
